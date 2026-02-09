@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Графический редактор</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<h2>Построение отрезков</h2>
+
+<div class="toolbar">
+    <select id="algorithm">
+        <option value="dda">ЦДА</option>
+        <option value="bresenham">Брезенхем</option>
+        <option value="wu">Ву</option>
+    </select>
+
+    <label>
+        Масштаб сетки:
+        <input type="range" id="scale" min="10" max="40" value="20">
+    </label>
+
+    <button onclick="step()">Шаг</button>
+    <button onclick="reset()">Сброс</button>
+</div>
+
+<canvas id="canvas" width="600" height="600"></canvas>
+
+<h3>Таблица значений</h3>
+<table id="table"></table>
+
+<script src="/static/main.js"></script>
+</body>
+</html>
