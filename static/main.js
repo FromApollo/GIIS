@@ -8,7 +8,7 @@ let start = null;
 let end = null;
 
 document.getElementById("scale").oninput = e => {
-    scale = e.target.value;
+    scale = Number(e.target.value);
     redraw();
 };
 
