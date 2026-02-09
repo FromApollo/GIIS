@@ -21,6 +21,7 @@ canvas.onclick = e => {
         end = {x, y};
         drawLine();
     }
+    redraw(); // чтобы сразу показать точки
 };
 
 function drawGrid() {
@@ -47,6 +48,19 @@ function drawPixel(x, y, intensity = 1) {
     ctx.fillRect(x * scale, y * scale, scale, scale);
 }
 
+function drawPointMarker(point, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(
+        point.x * scale + scale / 2,
+        point.y * scale + scale / 2,
+        scale / 4,
+        0,
+        Math.PI * 2
+    );
+    ctx.fill();
+}
+
 function drawLine() {
     fetch("/draw", {
         method: "POST",
@@ -68,24 +82,34 @@ function drawLine() {
     });
 }
 
+// новая функция для полной отрисовки линии
+function drawAll() {
+    if (!points.length) return;
+    stepIndex = points.length;
+    redraw();
+}
+
 function step() {
     if (stepIndex >= points.length) return;
 
     const p = points[stepIndex];
-    if (p.length === 3)
-        drawPixel(p[0], p[1], p[2]);
-    else
-        drawPixel(p[0], p[1]);
+    drawPixel(p[0], p[1], p[2] || 1);
 
     stepIndex++;
 }
 
 function redraw() {
     drawGrid();
+
+    // отрисовка шагов линии
     for (let i = 0; i < stepIndex; i++) {
         const p = points[i];
         drawPixel(p[0], p[1], p[2] || 1);
     }
+
+    // выделение начальной и конечной точки
+    if (start) drawPointMarker(start, "green");
+    if (end) drawPointMarker(end, "red");
 }
 
 function reset() {
