@@ -89,6 +89,20 @@ def wu(x1, y1, x2, y2):
     def rfpart(x):
         return 1 - fpart(x)
 
+    if x1 == x2:
+        y_start, y_end = sorted([y1, y2])
+        for y in range(y_start, y_end + 1):
+            points.append((x1, y, 1))
+            table.append({"x": x1, "y": y, "p1": (x1, y), "i1": 1})
+        return points, table
+
+    if y1 == y2:
+        x_start, x_end = sorted([x1, x2])
+        for x in range(x_start, x_end + 1):
+            points.append((x, y1, 1))
+            table.append({"x": x, "y": y1, "p1": (x, y1), "i1": 1})
+        return points, table
+
     steep = abs(y2 - y1) > abs(x2 - x1)
     if steep:
         x1, y1 = y1, x1
@@ -107,16 +121,19 @@ def wu(x1, y1, x2, y2):
         p1 = (int(y), x) if steep else (x, int(y))
         p2 = (int(y) + 1, x) if steep else (x, int(y) + 1)
 
-        points.append((p1[0], p1[1], rfpart(y)))
-        points.append((p2[0], p2[1], fpart(y)))
+        i1 = rfpart(y)
+        i2 = fpart(y)
+
+        points.append((p1[0], p1[1], i1))
+        points.append((p2[0], p2[1], i2))
 
         table.append({
             "x": x,
             "y": y,
             "p1": p1,
             "p2": p2,
-            "i1": rfpart(y),
-            "i2": fpart(y)
+            "i1": i1,
+            "i2": i2
         })
 
         y += gradient
