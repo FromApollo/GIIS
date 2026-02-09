@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Отрезки</title>
+    <link rel="stylesheet" href="/static/lab1/style.css">
+</head>
+<body>
+    <header>
+        <h1>Отрезки</h1>
+        <nav>
+            <button onclick="location.href='/'">Меню</button>
+            <button onclick="location.href='/lab2'">Лаб2</button>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <select id="algorithm">
+            <option value="dda">ЦДА</option>
+            <option value="bresenham">Брезенхем</option>
+            <option value="wu">Ву</option>
+        </select>
+        <label>Масштаб сетки:
+            <input type="range" id="scale" min="10" max="40" value="20">
+        </label>
+        <button onclick="step()">Шаг</button>
+        <button onclick="reset()">Сброс</button>
+        <button onclick="drawAll()">Нарисовать сразу</button>
+    </div>
+
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <h3>Таблица значений</h3>
+    <table id="table"></table>
+
+    <script src="/static/lab1/main.js"></script>
+</body>
+</html>

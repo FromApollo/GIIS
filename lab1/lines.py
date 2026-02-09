@@ -1,4 +1,3 @@
-# lab1.py
 import math
 
 def dda(x1, y1, x2, y2):

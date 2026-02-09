@@ -62,7 +62,7 @@ function drawPointMarker(point, color) {
 }
 
 function drawLine() {
-    fetch("/draw", {
+    fetch("lab1/draw", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
