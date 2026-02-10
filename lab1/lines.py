@@ -8,14 +8,24 @@ def dda(x1, y1, x2, y2):
     dy = y2 - y1
     length = max(abs(dx), abs(dy))
 
+    if length == 0:
+        px, py = int(x1), int(y1)
+        points.append((px, py))
+        table.append({"i": 0, "x": x1, "y": y1, "plot_x": px, "plot_y": py})
+        return points, table
+
     dx /= length
     dy /= length
 
-    x = x1 + 0.5 * (1 if dx > 0 else -1 if dx < 0 else 0)
-    y = y1 + 0.5 * (1 if dy > 0 else -1 if dy < 0 else 0)
+
+    x = float(x1)
+    y = float(y1)
 
     for i in range(int(length) + 1):
-        px, py = int(x), int(y)
+
+        px = int(x + 0.5)
+        py = int(y + 0.5)
+
         points.append((px, py))
         table.append({
             "i": i,
@@ -24,6 +34,7 @@ def dda(x1, y1, x2, y2):
             "plot_x": px,
             "plot_y": py
         })
+
         x += dx
         y += dy
 

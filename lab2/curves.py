@@ -69,41 +69,46 @@ def ellipse(cx, cy, a, b):
 
 
 def parabola(cx, cy, p, limit=40):
-    """y² = 2px (открыта вправо)"""
+    """ y² = 2px   (p > 0 — вправо, p < 0 — влево) """
     points = []
     table = []
+
+    # Абсолютное значение параметра для вычислений
+    p_abs = abs(p)
+    direction = 1 if p >= 0 else -1  # куда идём по x
+
     x, y = 0, 0
-    d = 1 - 2 * p
+    d = 1 - 2 * p_abs
     i = 0
 
-    # Участок 1 (крутой)
-    while y <= p and x <= limit:
+    # Участок 1 (крутой, |dy/dx| > 1)
+    while y <= p_abs and abs(x) <= limit:
         for dy in [y, -y]:
-            points.append((cx + x, cy + dy))
+            points.append((cx + x * direction, cy + dy))
         table.append({"i": i, "x": x, "y": y, "d": d})
         i += 1
 
         y += 1
         if d >= 0:
             x += 1
-            d += 2 * y + 3 - 2 * p
+            d += 2 * y + 3 - 2 * p_abs
         else:
             d += 2 * y + 3
 
-    # Участок 2 (пологий)
-    d = (y + 0.5) ** 2 - 2 * p * (x + 1)
-    while x <= limit:
+    # Участок 2 (пологий, |dy/dx| < 1)
+    d = (y + 0.5) ** 2 - 2 * p_abs * (x + 1)
+    while abs(x) <= limit:
         for dy in [y, -y]:
-            points.append((cx + x, cy + dy))
+            points.append((cx + x * direction, cy + dy))
         table.append({"i": i, "x": x, "y": y, "d": d})
         i += 1
 
         x += 1
         if d < 0:
             y += 1
-            d += 2 * y + 2 - 2 * p
+            d += 2 * y + 2 - 2 * p_abs
         else:
-            d -= 2 * p
+            d -= 2 * p_abs
 
     return points, table
 
