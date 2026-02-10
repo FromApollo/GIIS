@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Кривые второго порядка</title>
+    <link rel="stylesheet" href="/static/lab1/style.css">
+    <link rel="stylesheet" href="/static/lab2/style.css">
+</head>
+<body>
+    <header>
+        <h1>Кривые второго порядка (Брезенхем / средняя точка)</h1>
+        <nav>
+            <button onclick="location.href='/'">Меню</button>
+            <button onclick="location.href='/lab1'">Лаб 1 — Отрезки</button>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <select id="curve-type">
+            <option value="circle">Окружность</option>
+            <option value="ellipse">Эллипс</option>
+            <option value="parabola">Парабола (y² = 2px)</option>
+            <option value="hyperbola">Гипербола</option>
+        </select>
+
+        <div id="params-circle" class="param-group">
+            <label>Радиус R: <input type="number" id="r" value="10" min="1"></label>
+        </div>
+
+        <div id="params-ellipse" class="param-group" style="display:none;">
+            <label>Полуось a (по X): <input type="number" id="a" value="15" min="1"></label>
+            <label>Полуось b (по Y): <input type="number" id="b" value="10" min="1"></label>
+        </div>
+
+        <div id="params-parabola" class="param-group" style="display:none;">
+            <label>Параметр p: <input type="number" id="p" value="5" min="1" step="0.5"></label>
+        </div>
+
+        <div id="params-hyperbola" class="param-group" style="display:none;">
+            <label>Параметр a: <input type="number" id="ha" value="6" min="1"></label>
+            <label>Параметр b: <input type="number" id="hb" value="4" min="1"></label>
+        </div>
+
+        <label>Масштаб сетки:
+            <input type="range" id="scale" min="10" max="40" value="20">
+        </label>
+
+        <button onclick="step()">Шаг</button>
+        <button onclick="reset()">Сброс</button>
+        <button onclick="drawAll()">Нарисовать сразу</button>
+    </div>
+
+    <canvas id="canvas" width="800" height="800"></canvas>
+    <h3>Таблица значений</h3>
+    <table id="table"></table>
+
+    <script src="/static/lab2/main.js"></script>
+</body>
+</html>
