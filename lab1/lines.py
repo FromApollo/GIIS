@@ -129,23 +129,35 @@ def wu(x1, y1, x2, y2):
 
     y = y1
     for x in range(x1, x2 + 1):
-        p1 = (int(y), x) if steep else (x, int(y))
-        p2 = (int(y) + 1, x) if steep else (x, int(y) + 1)
+        # Для первого пикселя используем полную интенсивность
+        if x == x1:
+            p1 = (int(round(y)), x) if steep else (x, int(round(y)))
+            i1 = 1.0
+            points.append((p1[0], p1[1], i1))
+            table.append({
+                "x": x,
+                "y": y,
+                "p1": p1,
+                "i1": i1
+            })
+        else:
+            p1 = (int(y), x) if steep else (x, int(y))
+            p2 = (int(y) + 1, x) if steep else (x, int(y) + 1)
 
-        i1 = rfpart(y)
-        i2 = fpart(y)
+            i1 = rfpart(y)
+            i2 = fpart(y)
 
-        points.append((p1[0], p1[1], i1))
-        points.append((p2[0], p2[1], i2))
+            points.append((p1[0], p1[1], i1))
+            points.append((p2[0], p2[1], i2))
 
-        table.append({
-            "x": x,
-            "y": y,
-            "p1": p1,
-            "p2": p2,
-            "i1": i1,
-            "i2": i2
-        })
+            table.append({
+                "x": x,
+                "y": y,
+                "p1": p1,
+                "p2": p2,
+                "i1": i1,
+                "i2": i2
+            })
 
         y += gradient
 
