@@ -2,8 +2,14 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 let scale = 20;
-let userPoints = []; // Опорные точки (максимум 4)
-let resultPoints = []; // Точки кривой от сервера
+let userPoints = [];
+let resultPoints = [];
+
+// При изменении алгоритма сбрасываем, чтобы не путаться
+document.getElementById("algorithm").onchange = () => {
+    reset();
+    updateStatus();
+};
 
 document.getElementById("scale").oninput = e => {
     scale = Number(e.target.value);
@@ -11,7 +17,13 @@ document.getElementById("scale").oninput = e => {
 };
 
 canvas.onclick = e => {
-    if (userPoints.length >= 4) return; // Больше 4 точек для кубического сплайна не берем
+    const algo = document.getElementById("algorithm").value;
+
+    // Ограничение: для Безье и Эрмита только 4 точки
+    if (algo !== 'bspline' && userPoints.length >= 4) {
+        alert("Для алгоритмов Безье и Эрмита используется ровно 4 точки.");
+        return;
+    }
 
     const x = Math.floor(e.offsetX / scale);
     const y = Math.floor(e.offsetY / scale);
@@ -21,14 +33,13 @@ canvas.onclick = e => {
     redraw();
 };
 
-// Функция, которая вызывается по кнопке "Нарисовать"
 function drawAll() {
+    const algo = document.getElementById("algorithm").value;
+
     if (userPoints.length < 4) {
-        alert("Сначала поставьте 4 точки на сетке!");
+        alert("Поставьте минимум 4 точки!");
         return;
     }
-
-    const algo = document.getElementById("algorithm").value;
 
     fetch("/lab3/draw", {
         method: "POST",
@@ -49,7 +60,7 @@ function drawAll() {
 function redraw() {
     drawGrid();
 
-    // Рисуем пунктирные линии между опорными точками ("скелет")
+    // Рисуем пунктирную ломаную линию между точками
     if (userPoints.length > 1) {
         ctx.setLineDash([5, 5]);
         ctx.strokeStyle = "rgba(255, 0, 0, 0.4)";
@@ -62,12 +73,13 @@ function redraw() {
         ctx.setLineDash([]);
     }
 
-    // Рисуем саму кривую
+    // Рисуем полученную кривую
+    ctx.fillStyle = "blue";
     resultPoints.forEach(p => {
-        drawPixel(p[0], p[1], p[2] || 1);
+        ctx.fillRect(p[0] * scale, p[1] * scale, scale, scale);
     });
 
-    // Рисуем маркеры опорных точек
+    // Рисуем опорные точки
     userPoints.forEach((p, i) => {
         drawPointMarker(p, i);
     });
@@ -84,11 +96,6 @@ function drawGrid() {
     }
 }
 
-function drawPixel(x, y, intensity) {
-    ctx.fillStyle = `rgba(0, 0, 255, ${intensity})`;
-    ctx.fillRect(x * scale, y * scale, scale, scale);
-}
-
 function drawPointMarker(p, index) {
     const cx = p.x * scale + scale/2;
     const cy = p.y * scale + scale/2;
@@ -100,7 +107,8 @@ function drawPointMarker(p, index) {
 
     ctx.fillStyle = "black";
     ctx.font = "10px Arial";
-    ctx.fillText("P" + (index + 1), p.x * scale, p.y * scale - 5);
+    // Сдвигаем надпись, чтобы не перекрывала точку
+    ctx.fillText("P" + (index + 1), p.x * scale + 5, p.y * scale - 5);
 }
 
 function buildTable(data) {
@@ -108,18 +116,16 @@ function buildTable(data) {
     tbody.innerHTML = "";
     data.forEach(row => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${row.t}</td>
-            <td>${row.x}</td>
-            <td>${row.y}</td>
-            <td>${row.px}, ${row.py}</td>
-        `;
+        tr.innerHTML = `<td>${row.t}</td><td>${row.x}</td><td>${row.y}</td><td>${row.px}, ${row.py}</td>`;
         tbody.appendChild(tr);
     });
 }
 
 function updateStatus() {
-    document.getElementById("status").innerText = `Точек: ${userPoints.length}/4`;
+    const algo = document.getElementById("algorithm").value;
+    const count = userPoints.length;
+    const limit = (algo === 'bspline') ? "∞" : "4";
+    document.getElementById("status").innerText = `Точек: ${count} / ${limit}`;
 }
 
 function reset() {
@@ -130,5 +136,5 @@ function reset() {
     redraw();
 }
 
-// Первичная отрисовка сетки
 drawGrid();
+updateStatus();
