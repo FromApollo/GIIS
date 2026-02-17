@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def generate_spline(all_points, algo, steps=20):
+def generate_spline(all_points, algo, steps=40):
     # Если точек меньше 4, строить кубический сплайн/кривую нельзя
     if len(all_points) < 4:
         return [], []
