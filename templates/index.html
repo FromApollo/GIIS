@@ -2,12 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <title>Компьютерная графика</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+    </style>
 </head>
 <body>
     <header>
-        <nav>
-            <button onclick="location.href='/lab1'">Отрезки</button>
-            <button onclick="location.href='/lab2'">Лабораторная 2</button>
+        <h1>Меню лабораторных работ</h1>
+        <nav style="display: flex; flex-direction: column; width: 300px;">
+            <button onclick="location.href='/lab1'">Лабораторная 1: Линии</button>
+            <button onclick="location.href='/lab2'">Лабораторная 2: Кривые 2 порядка</button>
+            <button onclick="location.href='/lab3'">Лабораторная 3: Аппроксимация</button>
         </nav>
     </header>
 </body>

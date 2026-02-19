@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лабораторная 3: Сплайны</title>
+    <link rel="stylesheet" href="/static/lab1/style.css">
+</head>
+<body>
+    <header>
+        <h1>Аппроксимация кривых</h1>
+        <nav>
+            <button onclick="location.href='/'">Меню</button>
+            <button onclick="location.href='/lab1'">Лаб1</button>
+            <button onclick="location.href='/lab2'">Лаб2</button>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <select id="algorithm">
+            <option value="hermite">Эрмит</option>
+            <option value="bezier">Безье</option>
+            <option value="bspline">B-сплайн</option>
+        </select>
+        <label>Масштаб:
+            <input type="range" id="scale" min="10" max="40" value="20">
+        </label>
+        <button onclick="reset()">Сброс</button>
+        <button onclick="drawAll()">Нарисовать</button>
+        <span id="status" style="margin-left: 10px; font-weight: bold;">Точек: 0</span>
+    </div>
+
+    <div style="display: flex; gap: 20px; align-items: flex-start;">
+        <canvas id="canvas" width="600" height="600"></canvas>
+        <div>
+            <h3>Таблица значений</h3>
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table id="table">
+                    <thead>
+                        <tr><th>t</th><th>X(t)</th><th>Y(t)</th><th>Пиксель</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/lab3/main.js"></script>
+</body>
+</html>
