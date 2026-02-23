@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лабораторная 4: 3D Преобразования</title>
+    <link rel="stylesheet" href="/static/lab1/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Лабораторная 4: 3D Афинные преобразования</h1>
+        <nav>
+            <button onclick="location.href='/'">Меню</button>
+            <button onclick="location.href='/lab3'">Лаб3</button>
+        </nav>
+    </header>
+
+    <div class="toolbar" style="background: #f0f0f0; padding: 10px; line-height: 1.6; border: 1px solid #ccc;">
+        <div style="margin-bottom: 10px;">
+            <label for="fileSelect"><b>Выберите объект:</b></label>
+            <select id="fileSelect" onchange="loadSelectedFile()">
+                <option value="">Загрузка...</option>
+            </select>
+            <button onclick="resetModel()">Сбросить камеру (R)</button>
+        </div>
+        <strong>Управление:</strong> ↔️↕️ (X,Y), <b>Q/E</b> (Z) | <b>W/S, A/D, Z/X</b> - Повороты | <b>+/-</b> - Масштаб
+    </div>
+
+    <canvas id="canvas3d" width="800" height="600" style="display: block; margin: 20px auto; background: #ffffff; border: 1px solid #ccc;"></canvas>
+
+    <script src="/static/lab4/main.js"></script>
+</body>
+</html>
