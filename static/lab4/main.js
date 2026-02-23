@@ -131,7 +131,7 @@ window.addEventListener('keydown', e => {
         case 'KeyZ': mat4.fromZRotation(trans, angle); break;
         case 'KeyX': mat4.fromZRotation(trans, -angle); break;
 
-        // Масштабирование (Scaling)
+        // Отражение (Reflection)
         case 'KeyJ': // Отражение YZ (X → -X)
             mat4.fromScaling(trans, [-1, 1, 1]);
             break;
@@ -140,7 +140,17 @@ window.addEventListener('keydown', e => {
             break;
         case 'KeyL': // Отражение XY (Z → -Z)
             mat4.fromScaling(trans, [1, 1, -1]);
-    break;
+            break;  // ← Здесь был пропущен break!
+
+        // МАСШТАБИРОВАНИЕ (Scaling)
+        case 'Equal':      // Клавиша "+" (без Shift)
+        case 'NumpadAdd':  // "+" на цифровой клавиатуре
+            mat4.fromScaling(trans, [1.1, 1.1, 1.1]); // Увеличение на 10%
+            break;
+        case 'Minus':       // Клавиша "-"
+        case 'NumpadSubtract': // "-" на цифровой клавиатуре
+            mat4.fromScaling(trans, [0.9, 0.9, 0.9]); // Уменьшение на 10%
+            break;
 
         // Перспектива (Perspective)
         case 'KeyP': usePerspective = !usePerspective; render(); return;
