@@ -118,8 +118,8 @@ window.addEventListener('keydown', e => {
         case 'ArrowRight': mat4.fromTranslation(trans, [step, 0, 0]); break;
         case 'ArrowUp':    mat4.fromTranslation(trans, [0, step, 0]); break;
         case 'ArrowDown':  mat4.fromTranslation(trans, [0, -step, 0]); break;
-        case 'PageUp':     mat4.fromTranslation(trans, [0, 0, step]); break;
-        case 'PageDown':   mat4.fromTranslation(trans, [0, 0, -step]); break;
+        case 'KeyQ':     mat4.fromTranslation(trans, [0, 0, step]); break;
+        case 'KeyE':   mat4.fromTranslation(trans, [0, 0, -step]); break;
         case 'KeyW': mat4.fromXRotation(trans, angle); break;
         case 'KeyS': mat4.fromXRotation(trans, -angle); break;
         case 'KeyA': mat4.fromYRotation(trans, angle); break;
