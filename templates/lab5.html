@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Полигоны</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .group { display: flex; gap: 5px; align-items: center;
+                 border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; }
+        .group b { margin-right: 4px; }
+        button { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+        button.active { background: #4a90d9; color: #fff; }
+        #canvas { border: 1px solid #aaa; cursor: crosshair; display: block; margin-top: 6px; }
+        #status { margin: 4px 0; color: #666; font-style: italic; }
+        #result { margin: 4px 0; font-weight: bold; font-size: 15px; }
+        table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 3px 8px; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Предварительная обработка полигонов</h1>
+        <nav>
+            <button onclick="location.href='/'">← Меню</button>
+            <button onclick="location.href='/lab1'">Лаб1</button>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <div class="group">
+            <b>Режим:</b>
+            <button id="btn-polygon" class="active" onclick="setMode('polygon')">Полигон</button>
+            <button id="btn-segment" onclick="setMode('segment')">Отрезок</button>
+            <button id="btn-point"   onclick="setMode('point')">Точка</button>
+        </div>
+        <div class="group">
+            <button onclick="closePolygon()">Замкнуть</button>
+            <button onclick="reset()">Сброс</button>
+            <label>Масштаб: <input type="range" id="scale" min="10" max="50" value="20"></label>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <div class="group">
+            <b>Построение полигонов:</b>
+            <button onclick="checkConvexity()">Выпуклость</button>
+            <button onclick="findNormals()">Нормали</button>
+            <button onclick="buildHull('graham')">Оболочка Грэхема</button>
+            <button onclick="buildHull('jarvis')">Оболочка Джарвиса</button>
+            <button onclick="findIntersection()">Пересечение</button>
+            <button onclick="checkPoint()">Точка в полигоне</button>
+        </div>
+    </div>
+
+    <div id="status">Кликайте по canvas чтобы добавить вершины полигона</div>
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <div id="result"></div>
+    <h3>Таблица значений</h3>
+    <table id="table"></table>
+
+    <script src="/static/lab5/main.js"></script>
+</body>
+</html>
