@@ -3,12 +3,16 @@ from lab1.routes import lab1_bp
 from lab2.routes import lab2_bp
 from lab3.routes import lab3_bp
 from lab4.routes import lab4_bp
+from lab5.routes import lab5_bp
+
 app = Flask(__name__)
 app.register_blueprint(lab1_bp)
 app.register_blueprint(lab2_bp)
 app.register_blueprint(lab3_bp)
 
 app.register_blueprint(lab4_bp)
+
+app.register_blueprint(lab5_bp)
 
 @app.route("/")
 def index():
@@ -29,6 +33,10 @@ def lab3_page():
 @app.route("/lab4")
 def lab4_page():
     return render_template("lab4.html")
+
+@app.route("/lab5")
+def lab5_page():
+    return render_template("lab5.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
