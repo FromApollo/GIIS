@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лаб. 6 — Заполнение полигонов</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: sans-serif;
+            padding: 16px;
+            background: #f5f5f5;
+        }
+
+        h1 { margin: 0 0 10px; font-size: 20px; }
+
+        nav { margin-bottom: 10px; }
+        nav button { margin-right: 6px; }
+
+        /* ── Панели инструментов ── */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .group {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        .group b { margin-right: 4px; font-size: 13px; color: #555; }
+
+        button {
+            padding: 5px 11px;
+            font-size: 13px;
+            cursor: pointer;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            background: #f0f0f0;
+        }
+        button:hover { background: #e0e0e0; }
+        button.active { background: #4a90d9; color: #fff; border-color: #4a90d9; }
+
+        /* ── Canvas ── */
+        #canvas {
+            border: 1px solid #aaa;
+            cursor: crosshair;
+            display: block;
+            margin-top: 6px;
+            background: #fff;
+        }
+
+        /* ── Статус / результат ── */
+        #status { margin: 4px 0; color: #666; font-style: italic; font-size: 13px; }
+        #result { margin: 4px 0; font-weight: bold; font-size: 14px; color: #1a1a1a; }
+
+        /* ── Пошаговая панель ── */
+        #debug-panel {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            padding: 6px 12px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+        }
+        #step-info { font-weight: bold; font-size: 13px; min-width: 120px; }
+        #debug-panel button { padding: 4px 10px; font-size: 13px; }
+
+        /* ── Таблица ── */
+        h3 { margin: 10px 0 4px; font-size: 14px; }
+
+        #table-wrapper {
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fff;
+        }
+
+        table {
+            border-collapse: collapse;
+            font-size: 12px;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 3px 8px;
+            white-space: nowrap;
+            max-width: 340px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th { background: #f0f0f0; position: sticky; top: 0; }
+        tr:nth-child(even) td { background: #fafafa; }
+
+        /* цветовой выбор */
+        input[type=color] { width: 34px; height: 28px; padding: 1px; cursor: pointer; border: 1px solid #bbb; border-radius: 4px; }
+        input[type=range] { width: 90px; }
+
+        label { font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Лабораторная работа №6 — Заполнение полигонов</h1>
+    <nav>
+        <button onclick="location.href='/'">← Меню</button>
+        <button onclick="location.href='/lab5'">Лаб. 5</button>
+    </nav>
+</header>
+
+<!-- ── Панель 1: режим + утилиты ── -->
+<div class="toolbar">
+    <div class="group">
+        <b>Режим:</b>
+        <button id="btn-polygon" class="active" onclick="setMode('polygon')">Полигон</button>
+        <button id="btn-seed"                   onclick="setMode('seed')">Затравка</button>
+    </div>
+    <div class="group">
+        <button onclick="closePolygon()">Замкнуть</button>
+        <button onclick="reset()">Сброс</button>
+    </div>
+    <div class="group">
+        <label>Масштаб: <input type="range" id="scale" min="10" max="50" value="20"></label>
+    </div>
+    <div class="group">
+        <label>Цвет заливки: <input type="color" id="fillColor" value="#4a90d9"></label>
+    </div>
+</div>
+
+<!-- ── Панель 2: алгоритмы ── -->
+<div class="toolbar">
+    <div class="group">
+        <b>Растровая развёртка:</b>
+        <button onclick="fillScanlineOEL()" title="Упорядоченный список рёбер">УСР</button>
+        <button onclick="fillScanlineAEL()" title="Список активных рёбер (CAP)">CAP</button>
+    </div>
+    <div class="group">
+        <b>Затравка:</b>
+        <button onclick="fillSeedSimple()"   title="Простой 4-связный алгоритм">Простая (4-св)</button>
+        <button onclick="fillSeedScanline()" title="Построчный алгоритм">Построчная</button>
+    </div>
+    <div class="group">
+        <b>Отладка:</b>
+        <button id="btn-debug" onclick="toggleDebug()">Пошагово</button>
+    </div>
+</div>
+
+<!-- ── Пошаговая панель ── -->
+<div id="debug-panel">
+    <span id="step-info">Шаг — / —</span>
+    <button onclick="stepFirst()">|◀</button>
+    <button onclick="stepPrev()">◀</button>
+    <button onclick="stepNext()">▶</button>
+    <button onclick="stepLast()">▶|</button>
+</div>
+
+<div id="status">Кликайте по canvas чтобы добавить вершины полигона</div>
+<canvas id="canvas" width="600" height="600"></canvas>
+<div id="result"></div>
+
+<h3>Таблица шагов алгоритма</h3>
+<div id="table-wrapper">
+    <table id="table"></table>
+</div>
+
+<script src="/static/lab6/main6.js"></script>
+</body>
+</html>
