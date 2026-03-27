@@ -62,6 +62,32 @@ function drawGrid() {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
     }
 }
+function drawBresenhamGridLine(x0, y0, x1, y1, color = "#666") {
+    ctx.fillStyle = color;
+
+    // Работаем с целыми числами координат сетки
+    let x = Math.floor(x0);
+    let y = Math.floor(y0);
+    let xEnd = Math.floor(x1);
+    let yEnd = Math.floor(y1);
+
+    let dx = Math.abs(xEnd - x);
+    let dy = Math.abs(yEnd - y);
+    let sx = (x < xEnd) ? 1 : -1;
+    let sy = (y < yEnd) ? 1 : -1;
+    let err = dx - dy;
+
+    while (true) {
+        // Рисуем квадрат размером с ячейку scale
+        // +1 и -2 добавлены, чтобы оставить тонкую рамку сетки видимой
+        ctx.fillRect(x * scale + 1, y * scale + 1, scale - 2, scale - 2);
+
+        if (x === xEnd && y === yEnd) break;
+        let e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x += sx; }
+        if (e2 < dx) { err += dx; y += sy; }
+    }
+}
 
 function drawPolygon() {
     if (!polygonPoints.length) return;
@@ -128,21 +154,23 @@ function drawNormals() {
         ctx.stroke();
     });
 }
-
 function drawSegment() {
     if (!segmentPoints.length) return;
-    ctx.strokeStyle = "purple";
-    ctx.lineWidth = 2;
+
+    if (segmentPoints.length === 2) {
+        drawBresenhamGridLine(
+            segmentPoints[0][0], segmentPoints[0][1],
+            segmentPoints[1][0], segmentPoints[1][1],
+            "rgba(128, 0, 128, 0.6)" // Фиолетовый цвет ячеек
+        );
+    }
+
     segmentPoints.forEach(p => {
         ctx.fillStyle = "purple";
-        ctx.beginPath(); ctx.arc(cx(p[0]), cy(p[1]), 5, 0, Math.PI * 2); ctx.fill();
-    });
-    if (segmentPoints.length === 2) {
         ctx.beginPath();
-        ctx.moveTo(cx(segmentPoints[0][0]), cy(segmentPoints[0][1]));
-        ctx.lineTo(cx(segmentPoints[1][0]), cy(segmentPoints[1][1]));
-        ctx.stroke();
-    }
+        ctx.arc(cx(p[0]), cy(p[1]), 5, 0, Math.PI * 2);
+        ctx.fill();
+    });
 }
 
 function drawTestPoint() {
