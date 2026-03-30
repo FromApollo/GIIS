@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лаб 7: Триангуляция Делоне и диаграмма Вороного</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .group { display: flex; gap: 5px; align-items: center;
+                 border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; }
+        .group b { margin-right: 4px; }
+        button { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+        button.active { background: #4a90d9; color: #fff; }
+        #canvas { border: 1px solid #aaa; cursor: crosshair; display: block; margin-top: 6px; }
+        #status { margin: 4px 0; color: #666; font-style: italic; }
+        #result { margin: 4px 0; font-weight: bold; font-size: 15px; }
+        table { border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 3px 8px; }
+        th { background: #f0f0f0; }
+        .legend { display: flex; gap: 16px; margin: 6px 0; font-size: 13px; align-items: center; }
+        .legend span { display: inline-block; width: 30px; height: 3px; margin-right: 4px; vertical-align: middle; }
+        .leg-del { background: #2980b9; }
+        .leg-vor { background: #e74c3c; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Лабораторная 7: Триангуляция Делоне и диаграмма Вороного</h1>
+        <nav>
+            <button onclick="location.href='/'">← Меню</button>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <div class="group">
+            <b>Построить:</b>
+            <button onclick="computeDelaunay()">Триангуляция Делоне</button>
+            <button onclick="computeVoronoi()">Диаграмма Вороного</button>
+        </div>
+        <div class="group">
+            <b>Показать:</b>
+            <button id="btn-delaunay" class="active" onclick="toggleDelaunay()">Триангуляция</button>
+            <button id="btn-voronoi" onclick="toggleVoronoi()">Вороного</button>
+        </div>
+        <div class="group">
+            <button onclick="reset()">Сброс</button>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div><span class="leg-del"></span> Триангуляция Делоне (синий)</div>
+        <div><span class="leg-vor"></span> Диаграмма Вороного (красный)</div>
+    </div>
+
+    <div id="status">Кликайте по canvas для добавления точек (минимум 3)</div>
+    <canvas id="canvas" width="700" height="550"></canvas>
+    <div id="result"></div>
+
+    <h3>Лог инкрементального алгоритма</h3>
+    <table id="table"></table>
+
+    <script src="/static/lab7/main.js"></script>
+</body>
+</html>

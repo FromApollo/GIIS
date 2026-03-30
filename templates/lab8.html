@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лаб 8: Отсечение и невидимые грани</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .tab-btn { padding: 8px 18px; font-size: 15px; cursor: pointer; border: 1px solid #aaa;
+                   background: #f5f5f5; border-radius: 4px 4px 0 0; margin-right: 3px; }
+        .tab-btn.active { background: #2980b9; color: #fff; border-color: #2980b9; }
+        .tab-content { border: 1px solid #aaa; padding: 14px; border-radius: 0 4px 4px 4px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .group { display: flex; gap: 5px; align-items: center;
+                 border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; }
+        .group b { margin-right: 4px; }
+        button { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+        button.active { background: #4a90d9; color: #fff; }
+        canvas { border: 1px solid #aaa; cursor: crosshair; display: block; margin-top: 6px; }
+        #canvas3d { cursor: grab; }
+        #status2d { margin: 4px 0; color: #666; font-style: italic; }
+        .result-line { margin: 6px 0; font-weight: bold; font-size: 15px; }
+        table { border-collapse: collapse; margin-top: 6px; font-size: 13px; max-width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 3px 8px; }
+        th { background: #f0f0f0; }
+        label { font-size: 13px; }
+        input[type=number] { width: 60px; font-size: 13px; }
+        .layout { display: flex; gap: 16px; flex-wrap: wrap; }
+        .canvas-col { flex: 0 0 auto; }
+        .info-col { flex: 1 1 300px; }
+        .legend { display: flex; gap: 16px; margin: 4px 0; font-size: 12px; align-items: center; }
+        .leg-box { display: inline-block; width: 24px; height: 12px; vertical-align: middle; margin-right: 4px; border: 1px solid #999; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Лабораторная 8: Отсечение невидимых линий и граней</h1>
+        <nav>
+            <button onclick="location.href='/'">← Меню</button>
+        </nav>
+    </header>
+
+    <!-- Вкладки -->
+    <div style="margin-top:12px">
+        <button class="tab-btn active" id="tabBtn-clip2d" onclick="switchTab('clip2d')">
+            2D: Отсечение отрезков
+        </button>
+        <button class="tab-btn" id="tabBtn-rob3d" onclick="switchTab('rob3d')">
+            3D: Невидимые грани (Робертс)
+        </button>
+    </div>
+
+    <!-- ═══════ ВКЛАДКА 1: Отсечение 2D ═══════ -->
+    <div class="tab-content" id="tab-clip2d">
+        <h2>Отсечение отрезков (Коэн–Сазерленд и Кирус–Бэк)</h2>
+
+        <div class="toolbar">
+            <div class="group">
+                <b>Окно:</b>
+                xmin <input type="number" id="w-xmin" value="150" onchange="updateWindow()">
+                ymin <input type="number" id="w-ymin" value="120" onchange="updateWindow()">
+                xmax <input type="number" id="w-xmax" value="500" onchange="updateWindow()">
+                ymax <input type="number" id="w-ymax" value="420" onchange="updateWindow()">
+            </div>
+            <div class="group">
+                <b>Алгоритм:</b>
+                <button onclick="clip2d('cs')">Коэн–Сазерленд</button>
+                <button onclick="clip2d('cb')">Кирус–Бэк</button>
+            </div>
+            <div class="group">
+                <button onclick="reset2d()">Сброс</button>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div><span class="leg-box" style="background:#aaa"></span> Исходный отрезок</div>
+            <div><span class="leg-box" style="background:#2980b9;border:none"></span> Видимая часть</div>
+            <div><span class="leg-box" style="border:2px dashed #27ae60;background:none"></span> Окно отсечения</div>
+        </div>
+
+        <div id="status2d">Кликайте 2 раза для добавления отрезка (1-й клик — P1, 2-й — P2)</div>
+        <div class="layout">
+            <div class="canvas-col">
+                <canvas id="canvas2d" width="650" height="500"></canvas>
+            </div>
+            <div class="info-col">
+                <div class="result-line" id="result2d"></div>
+                <div id="table2d"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ ВКЛАДКА 2: 3D Робертс ═══════ -->
+    <div class="tab-content" id="tab-rob3d" style="display:none">
+        <h2>Удаление невидимых граней (алгоритм Робертса)</h2>
+
+        <div class="toolbar">
+            <div class="group">
+                <b>Фигура:</b>
+                <button onclick="selectFigure('cube')">Куб</button>
+                <button onclick="selectFigure('pyramid')">Пирамида</button>
+            </div>
+            <div class="group">
+                <button onclick="computeRoberts()">Применить алгоритм Робертса</button>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div><span class="leg-box" style="background:rgba(41,128,185,0.25);border:2px solid #2980b9"></span> Видимая грань</div>
+            <div><span class="leg-box" style="background:none;border:2px dashed #e74c3c"></span> Скрытая грань</div>
+        </div>
+
+        <p style="color:#666;font-size:13px;margin:4px 0">
+            Перетащите мышью для вращения объекта, затем нажмите «Применить алгоритм Робертса»
+        </p>
+
+        <div class="layout">
+            <div class="canvas-col">
+                <canvas id="canvas3d" width="500" height="500"></canvas>
+            </div>
+            <div class="info-col">
+                <div class="result-line" id="result3d"></div>
+                <h4>Таблица видимости граней</h4>
+                <table id="table3d"></table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/lab8/main.js?v=3"></script>
+</body>
+</html>
