@@ -1,0 +1,41 @@
+from flask import Blueprint, request, jsonify
+from .clipping import (cohen_sutherland, cyrus_beck,
+                       roberts_visibility, make_cube_faces)
+
+lab8_bp = Blueprint("lab8", __name__)
+
+
+@lab8_bp.route("/lab8/cohen_sutherland", methods=["POST"])
+def route_cs():
+    d = request.json
+    visible, seg, table = cohen_sutherland(
+        d["x1"], d["y1"], d["x2"], d["y2"],
+        d["xmin"], d["xmax"], d["ymin"], d["ymax"]
+    )
+    return jsonify({"visible": visible, "segment": seg, "table": table})
+
+
+@lab8_bp.route("/lab8/cyrus_beck", methods=["POST"])
+def route_cb():
+    d = request.json
+    visible, seg, table = cyrus_beck(
+        d["x1"], d["y1"], d["x2"], d["y2"],
+        d["vertices"]
+    )
+    return jsonify({"visible": visible, "segment": seg, "table": table})
+
+
+@lab8_bp.route("/lab8/roberts", methods=["POST"])
+def route_roberts():
+    d = request.json
+    view_dir = d.get("view_dir", [-1, 0, -1])
+
+    # Принимаем кастомные грани или строим куб
+    if "faces" in d and d["faces"]:
+        faces = d["faces"]
+    else:
+        size = d.get("size", 1)
+        faces = make_cube_faces(0, 0, 0, size)
+
+    results, table = roberts_visibility(faces, view_dir)
+    return jsonify({"results": results, "table": table})
