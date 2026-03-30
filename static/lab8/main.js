@@ -3,11 +3,15 @@ const ctx    = canvas.getContext("2d");
 
 // ─── масштаб и состояние ─────────────────────
 let scale = 20;
-let tab   = "cs";   // текущая вкладка: "cs" | "cb" | "rob"
+let tab   = "cs";   // текущая вкладка: "cs" | "cb" | "mid" | "rob"
 
 // --- Cohen-Sutherland ---
 let cs = { seg: null, window: {xmin:3,xmax:13,ymin:3,ymax:11}, clip: null, step: 0 };
 let csClickStep = 0;   // 0=P1, 1=P2
+
+// --- Midpoint Subdivision ---
+let mid = { seg: null, window: {xmin:3,xmax:13,ymin:3,ymax:11}, clip: null };
+let midClickStep = 0;
 
 // --- Cyrus-Beck ---
 let cb = { seg: null, poly: [], polyClosed: false, clip: null };
@@ -44,9 +48,8 @@ function drawGrid() {
     ctx.beginPath(); ctx.moveTo(0, 0);             ctx.lineTo(0, canvas.height);             ctx.stroke();
 }
 
-// ─── окно отсечения (CS) ─────────────────────
-function drawCSWindow() {
-    const w = cs.window;
+// ─── окно отсечения (CS / Midpoint) ─────────────────────
+function drawWindow(w) {
     const x = cx(w.xmin), y = cy(w.ymax);
     const W = (w.xmax - w.xmin) * scale;
     const H = (w.ymax - w.ymin) * scale;
@@ -61,12 +64,12 @@ function drawCSWindow() {
     ctx.fillText(`(${w.xmax},${w.ymax})`, cx(w.xmax)+2, cy(w.ymax)-3);
 }
 
-function drawCSSeg() {
-    if (!cs.seg) return;
-    const [x1,y1,x2,y2] = cs.seg;
+function drawSegment(seg, dash=true) {
+    if (!seg) return;
+    const [x1,y1,x2,y2] = seg;
+    if (dash) ctx.setLineDash([5,4]);
     ctx.strokeStyle = "rgba(100,100,200,0.5)";
-    ctx.lineWidth   = 2;
-    ctx.setLineDash([5,4]);
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(cx(x1), cy(y1)); ctx.lineTo(cx(x2), cy(y2));
     ctx.stroke();
@@ -79,14 +82,30 @@ function drawCSSeg() {
     });
 }
 
-function drawCSClip() {
-    if (!cs.clip) return;
-    const [x1,y1,x2,y2] = cs.clip;
+function drawClip(clip) {
+    if (!clip) return;
+    const [x1,y1,x2,y2] = clip;
     ctx.strokeStyle = "#e63946";
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(cx(x1), cy(y1)); ctx.lineTo(cx(x2), cy(y2));
     ctx.stroke();
+}
+
+// ─── Cohen-Sutherland ─────────────────────────
+function drawCS() {
+    drawGrid();
+    drawWindow(cs.window);
+    drawSegment(cs.seg, true);
+    drawClip(cs.clip);
+}
+
+// ─── Midpoint Subdivision ─────────────────────
+function drawMid() {
+    drawGrid();
+    drawWindow(mid.window);
+    drawSegment(mid.seg, true);
+    drawClip(mid.clip);
 }
 
 // ─── Cyrus–Beck polygon + segment ────────────
@@ -138,6 +157,13 @@ function drawCBClip() {
     ctx.stroke();
 }
 
+function drawCB() {
+    drawGrid();
+    drawCBPoly();
+    drawCBSeg();
+    drawCBClip();
+}
+
 // ─── Roberts 3D ──────────────────────────────
 function drawRoberts() {
     if (!rob.results.length) { drawGrid(); return; }
@@ -158,16 +184,15 @@ function drawRoberts() {
     }
 
     // Грани куба (заданы в make_cube_faces)
-    const faceNames = ["Передняя","Задняя","Левая","Правая","Верхняя","Нижняя"];
-    const h = 1;
     const cubeFaces = [
-        [[-h,-h, h],[ h,-h, h],[ h, h, h],[-h, h, h]],
-        [[ h,-h,-h],[-h,-h,-h],[-h, h,-h],[ h, h,-h]],
-        [[-h,-h,-h],[-h,-h, h],[-h, h, h],[-h, h,-h]],
-        [[ h,-h, h],[ h,-h,-h],[ h, h,-h],[ h, h, h]],
-        [[-h, h, h],[ h, h, h],[ h, h,-h],[-h, h,-h]],
-        [[-h,-h,-h],[ h,-h,-h],[ h,-h, h],[-h,-h, h]],
+        [[-1,-1, 1],[ 1,-1, 1],[ 1, 1, 1],[-1, 1, 1]],
+        [[ 1,-1,-1],[-1,-1,-1],[-1, 1,-1],[ 1, 1,-1]],
+        [[-1,-1,-1],[-1,-1, 1],[-1, 1, 1],[-1, 1,-1]],
+        [[ 1,-1, 1],[ 1,-1,-1],[ 1, 1,-1],[ 1, 1, 1]],
+        [[-1, 1, 1],[ 1, 1, 1],[ 1, 1,-1],[-1, 1,-1]],
+        [[-1,-1,-1],[ 1,-1,-1],[ 1,-1, 1],[-1,-1, 1]],
     ];
+    const faceNames = ["Передняя","Задняя","Левая","Правая","Верхняя","Нижняя"];
 
     rob.results.forEach((r, i) => {
         const verts3d = cubeFaces[i];
@@ -183,6 +208,7 @@ function drawRoberts() {
             ctx.fillStyle   = "rgba(69,123,157,0.25)";
             ctx.strokeStyle = "#457b9d";
             ctx.lineWidth   = 2;
+            ctx.setLineDash([]);
         } else {
             ctx.fillStyle   = "rgba(200,200,200,0.1)";
             ctx.strokeStyle = "#ccc";
@@ -199,7 +225,7 @@ function drawRoberts() {
         ctx.fillStyle = r.visible ? "#264653" : "#aaa";
         ctx.font = "12px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(r.name, mcx, mcy);
+        ctx.fillText(faceNames[i], mcx, mcy);
         ctx.textAlign = "left";
     });
 
@@ -212,9 +238,11 @@ function drawRoberts() {
 // ─── главный redraw ──────────────────────────
 function redraw() {
     if (tab === "cs") {
-        drawGrid(); drawCSWindow(); drawCSSeg(); drawCSClip();
+        drawCS();
+    } else if (tab === "mid") {
+        drawMid();
     } else if (tab === "cb") {
-        drawGrid(); drawCBPoly(); drawCBSeg(); drawCBClip();
+        drawCB();
     } else {
         drawRoberts();
     }
@@ -233,6 +261,15 @@ canvas.onclick = e => {
             cs.seg[2] = gx; cs.seg[3] = gy;
             csClickStep = 0;
             cs.clip = null;
+        }
+    } else if (tab === "mid") {
+        if (midClickStep === 0) {
+            mid.seg = [gx, gy, gx, gy];
+            midClickStep = 1;
+        } else {
+            mid.seg[2] = gx; mid.seg[3] = gy;
+            midClickStep = 0;
+            mid.clip = null;
         }
     } else if (tab === "cb") {
         if (cbMode === "poly") {
@@ -291,6 +328,38 @@ function updateCSWindow() {
         ymax: Number(document.getElementById("cs-ymax").value),
     };
     cs.clip = null; redraw();
+}
+
+// ─── Midpoint Subdivision ────────────────────
+function runMidpoint() {
+    if (!mid.seg || mid.seg[0] === mid.seg[2] && mid.seg[1] === mid.seg[3])
+        return setStatus("Задайте отрезок (два клика)");
+    const w = mid.window;
+    fetch("/lab8/midpoint_subdivision", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            x1: mid.seg[0], y1: mid.seg[1], x2: mid.seg[2], y2: mid.seg[3],
+            xmin: w.xmin, xmax: w.xmax, ymin: w.ymin, ymax: w.ymax
+        })
+    }).then(r => r.json()).then(data => {
+        mid.clip = data.visible ? data.segment : null;
+        buildTable(data.table);
+        setResult(data.visible
+            ? `Видим. Отсечённый: (${data.segment[0]},${data.segment[1]}) — (${data.segment[2]},${data.segment[3]})`
+            : "Отрезок невидим (полностью вне окна)");
+        redraw();
+    });
+}
+
+function updateMidWindow() {
+    mid.window = {
+        xmin: Number(document.getElementById("mid-xmin").value),
+        xmax: Number(document.getElementById("mid-xmax").value),
+        ymin: Number(document.getElementById("mid-ymin").value),
+        ymax: Number(document.getElementById("mid-ymax").value),
+    };
+    mid.clip = null; redraw();
 }
 
 // ─── Cyrus-Beck ──────────────────────────────
@@ -365,6 +434,8 @@ function buildTable(rows) {
 function resetAll() {
     cs = { seg: null, window: {xmin:3,xmax:13,ymin:3,ymax:11}, clip: null };
     csClickStep = 0;
+    mid = { seg: null, window: {xmin:3,xmax:13,ymin:3,ymax:11}, clip: null };
+    midClickStep = 0;
     cb = { seg: null, poly: [], polyClosed: false, clip: null };
     cbMode = "poly";
     rob.results = [];

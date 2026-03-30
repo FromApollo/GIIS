@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .clipping import (cohen_sutherland, cyrus_beck,
+from .clipping import (cohen_sutherland, midpoint_subdivision, cyrus_beck,
                        roberts_visibility, make_cube_faces)
 
 lab8_bp = Blueprint("lab8", __name__)
@@ -9,6 +9,17 @@ lab8_bp = Blueprint("lab8", __name__)
 def route_cs():
     d = request.json
     visible, seg, table = cohen_sutherland(
+        d["x1"], d["y1"], d["x2"], d["y2"],
+        d["xmin"], d["xmax"], d["ymin"], d["ymax"]
+    )
+    return jsonify({"visible": visible, "segment": seg, "table": table})
+
+
+@lab8_bp.route("/lab8/midpoint_subdivision", methods=["POST"])
+def route_midpoint():
+    """Маршрут для алгоритма разбиения средней точкой."""
+    d = request.json
+    visible, seg, table = midpoint_subdivision(
         d["x1"], d["y1"], d["x2"], d["y2"],
         d["xmin"], d["xmax"], d["ymin"], d["ymax"]
     )
