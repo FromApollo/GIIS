@@ -17,8 +17,9 @@ let midClickStep = 0;
 let cb = { seg: null, poly: [], polyClosed: false, clip: null };
 let cbMode = "poly";   // "poly" | "seg"
 
-// --- Roberts ---
+// --- Roberts (Three.js state) ---
 let rob = { viewDir: [-1, 0, -1], results: [] };
+let robThree = null;   // хранит Three.js объекты
 
 // ─── масштаб ────────────────────────────────
 document.getElementById("scale").oninput = e => {
@@ -164,88 +165,231 @@ function drawCB() {
     drawCBClip();
 }
 
-// ─── Roberts 3D ──────────────────────────────
-function drawRoberts() {
-    if (!rob.results.length) { drawGrid(); return; }
+// ══════════════════════════════════════════════════════════════
+//  Roberts 3D — Three.js (как в d.html)
+// ══════════════════════════════════════════════════════════════
 
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#f8f9fa";
-    ctx.fillRect(0, 0, W, H);
+/**
+ * Создаёт Mesh четырёхугольной грани куба (2 треугольника).
+ * verts    — массив [x,y,z] всех вершин куба
+ * indices  — 4 индекса в массиве verts
+ * color    — цвет грани (hex)
+ * normalArr — нормаль [nx,ny,nz]
+ */
+function createRobQuadMesh(THREE, verts, indices, color, normalArr) {
+    const [v0, v1, v2, v3] = indices.map(i => verts[i]);
 
-    // Изометрическая проекция
-    const scale3 = 70;
-    const offX = W / 2, offY = H / 2 + 20;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([
+        v0[0], v0[1], v0[2],
+        v1[0], v1[1], v1[2],
+        v2[0], v2[1], v2[2],
+        v3[0], v3[1], v3[2],
+    ]), 3));
+    geometry.setIndex([0, 1, 2, 0, 2, 3]);
+    geometry.computeVertexNormals();
 
-    function proj(x, y, z) {
-        const px = (x - z) * Math.cos(Math.PI / 6);
-        const py = (x + z) * Math.sin(Math.PI / 6) - y;
-        return [offX + px * scale3, offY + py * scale3];
-    }
-
-    // Грани куба (заданы в make_cube_faces)
-    const cubeFaces = [
-        [[-1,-1, 1],[ 1,-1, 1],[ 1, 1, 1],[-1, 1, 1]],
-        [[ 1,-1,-1],[-1,-1,-1],[-1, 1,-1],[ 1, 1,-1]],
-        [[-1,-1,-1],[-1,-1, 1],[-1, 1, 1],[-1, 1,-1]],
-        [[ 1,-1, 1],[ 1,-1,-1],[ 1, 1,-1],[ 1, 1, 1]],
-        [[-1, 1, 1],[ 1, 1, 1],[ 1, 1,-1],[-1, 1,-1]],
-        [[-1,-1,-1],[ 1,-1,-1],[ 1,-1, 1],[-1,-1, 1]],
-    ];
-    const faceNames = ["Передняя","Задняя","Левая","Правая","Верхняя","Нижняя"];
-
-    rob.results.forEach((r, i) => {
-        const verts3d = cubeFaces[i];
-        const pts2d   = verts3d.map(v => proj(...v));
-
-        ctx.beginPath();
-        ctx.moveTo(pts2d[0][0], pts2d[0][1]);
-        for (let j = 1; j < pts2d.length; j++)
-            ctx.lineTo(pts2d[j][0], pts2d[j][1]);
-        ctx.closePath();
-
-        if (r.visible) {
-            ctx.fillStyle   = "rgba(69,123,157,0.25)";
-            ctx.strokeStyle = "#457b9d";
-            ctx.lineWidth   = 2;
-            ctx.setLineDash([]);
-        } else {
-            ctx.fillStyle   = "rgba(200,200,200,0.1)";
-            ctx.strokeStyle = "#ccc";
-            ctx.lineWidth   = 1;
-            ctx.setLineDash([5, 4]);
-        }
-        ctx.fill();
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Подпись в центре грани
-        const mcx = pts2d.reduce((s, p) => s + p[0], 0) / 4;
-        const mcy = pts2d.reduce((s, p) => s + p[1], 0) / 4;
-        ctx.fillStyle = r.visible ? "#264653" : "#aaa";
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(faceNames[i], mcx, mcy);
-        ctx.textAlign = "left";
+    const material = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.6,
+        metalness: 0.05,
+        flatShading: false,
     });
 
-    // Метка направления взгляда
-    ctx.fillStyle = "#333";
-    ctx.font = "12px sans-serif";
-    ctx.fillText(`Взгляд: [${rob.viewDir.join(", ")}]`, 10, 20);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.userData.normal = new THREE.Vector3(...normalArr).normalize();
+    return mesh;
 }
+
+/**
+ * Инициализирует Three.js сцену для алгоритма Робертса.
+ * Скрывает 2D canvas и добавляет WebGL canvas прямо рядом с ним.
+ * Алгоритм Робертса выполняется в каждом кадре (real-time).
+ */
+async function initRoberts3D() {
+    if (robThree) return;
+
+    const W = canvas.offsetWidth  || canvas.width;
+    const H = canvas.offsetHeight || canvas.height;
+
+    // Контейнер-обёртка для Three.js, вставляется после 2D canvas
+    const container = document.createElement("div");
+    container.id = "rob-three-container";
+    container.style.cssText = [
+        `width:${W}px`, `height:${H}px`,
+        "border:1px solid #aaa", "display:block",
+        "margin-top:6px", "position:relative",
+    ].join(";");
+    canvas.parentNode.insertBefore(container, canvas.nextSibling);
+
+    // Метка с подсказкой
+    const hint = document.createElement("div");
+    hint.style.cssText = [
+        "position:absolute", "bottom:12px", "right:12px",
+        "background:rgba(0,0,0,.6)", "color:#ccc",
+        "font:11px monospace", "padding:5px 10px",
+        "border-radius:5px", "pointer-events:none",
+    ].join(";");
+    hint.textContent = "🖱 ЛКМ: вращение | ПКМ: сдвиг | Scroll: масштаб";
+    container.appendChild(hint);
+
+    try {
+        // Динамическая загрузка Three.js (ES-модуль)
+        const THREE = await import("https://cdn.skypack.dev/three@0.128.0");
+        const { OrbitControls } = await import("https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/OrbitControls.js");
+
+        // ── Сцена ──────────────────────────────────────────────
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+
+        // ── Камера ────────────────────────────────────────────
+        const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
+        camera.position.set(4, 3, 5);
+        camera.lookAt(0, 0, 0);
+
+        // ── Рендерер ──────────────────────────────────────────
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(W, H);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.domElement.style.display = "block";
+        container.appendChild(renderer.domElement);
+
+        // ── OrbitControls ─────────────────────────────────────
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping  = true;
+        controls.dampingFactor  = 0.05;
+        controls.rotateSpeed    = 1.5;
+        controls.zoomSpeed      = 1.2;
+        controls.panSpeed       = 0.8;
+        controls.enableZoom     = true;
+        controls.enablePan      = true;
+        controls.target.set(0, 0, 0);
+
+        // ── Освещение ─────────────────────────────────────────
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        dirLight.position.set(2, 3, 2);
+        scene.add(dirLight);
+        const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        backLight.position.set(-1, 1, -2);
+        scene.add(backLight);
+
+        // ── Вершины куба (−1..+1) ─────────────────────────────
+        const verts = [
+            [-1,-1, 1],  // 0
+            [ 1,-1, 1],  // 1
+            [ 1, 1, 1],  // 2
+            [-1, 1, 1],  // 3
+            [-1,-1,-1],  // 4
+            [ 1,-1,-1],  // 5
+            [ 1, 1,-1],  // 6
+            [-1, 1,-1],  // 7
+        ];
+
+        // ── Грани куба (как в d.html) ─────────────────────────
+        const faceDefs = [
+            { indices:[0,1,2,3], color:0x3399ff, normal:[ 0, 0, 1], name:"Передняя" },
+            { indices:[4,7,6,5], color:0x3399ff, normal:[ 0, 0,-1], name:"Задняя"   },
+            { indices:[0,4,5,1], color:0x3399ff, normal:[ 0,-1, 0], name:"Нижняя"   },
+            { indices:[2,6,7,3], color:0x3399ff, normal:[ 0, 1, 0], name:"Верхняя"  },
+            { indices:[0,3,7,4], color:0x3399ff, normal:[-1, 0, 0], name:"Левая"    },
+            { indices:[1,5,6,2], color:0x3399ff, normal:[ 1, 0, 0], name:"Правая"   },
+        ];
+
+        const meshes = [];
+        faceDefs.forEach(fd => {
+            const mesh = createRobQuadMesh(THREE, verts, fd.indices, fd.color, fd.normal);
+            mesh.userData.faceName = fd.name;
+            scene.add(mesh);
+            meshes.push(mesh);
+        });
+
+        // ── Рёбра куба (чёрный контур) ────────────────────────
+        const edgesGeo = new THREE.BoxGeometry(2, 2, 2);
+        const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(edgesGeo),
+            new THREE.LineBasicMaterial({ color: 0x000000 })
+        );
+        scene.add(edges);
+
+        // ── Лёгкие оси координат ──────────────────────────────
+        const axes = new THREE.AxesHelper(3);
+        axes.material.transparent = true;
+        axes.material.opacity = 0.15;
+        scene.add(axes);
+
+        // ── Алгоритм Робертса: обновление видимости ───────────
+        function updateVisibilityRoberts() {
+            const camPos = camera.position;
+            meshes.forEach(mesh => {
+                const n = mesh.userData.normal;
+                if (!n) return;
+
+                // Вычисляем центр грани
+                const pos = mesh.geometry.attributes.position.array;
+                const cnt = pos.length / 3;
+                const center = new THREE.Vector3();
+                for (let i = 0; i < cnt; i++) {
+                    center.x += pos[i * 3];
+                    center.y += pos[i * 3 + 1];
+                    center.z += pos[i * 3 + 2];
+                }
+                center.divideScalar(cnt);
+
+                // Вектор от центра грани к камере
+                const viewDir = new THREE.Vector3()
+                    .subVectors(camPos, center)
+                    .normalize();
+
+                // Алгоритм Робертса: грань видима, если n·viewDir > 0
+                mesh.visible = n.dot(viewDir) > 0;
+            });
+        }
+
+        // ── Цикл анимации ─────────────────────────────────────
+        let animId;
+        function animate() {
+            animId = requestAnimationFrame(animate);
+            controls.update();
+            updateVisibilityRoberts();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Сохраняем все объекты для последующей очистки
+        robThree = {
+            container, renderer, scene, camera,
+            controls, meshes, animId, THREE,
+        };
+
+        setStatus("Алгоритм Робертса активен. Синие грани — видимые. Вращайте куб мышью.");
+
+    } catch (err) {
+        container.innerHTML =
+            `<p style="color:red;padding:20px;">Ошибка загрузки Three.js:<br>${err.message}</p>`;
+        console.error("Three.js load error:", err);
+    }
+}
+
+/** Уничтожает Three.js сцену и восстанавливает 2D canvas. */
+function destroyRoberts3D() {
+    if (!robThree) return;
+    cancelAnimationFrame(robThree.animId);
+    robThree.renderer.dispose();
+    if (robThree.container && robThree.container.parentNode)
+        robThree.container.parentNode.removeChild(robThree.container);
+    robThree = null;
+}
+
+/** Заглушка — рендеринг Робертса ведёт Three.js, не 2D ctx. */
+function drawRoberts() { /* Three.js управляет своим canvas */ }
 
 // ─── главный redraw ──────────────────────────
 function redraw() {
-    if (tab === "cs") {
-        drawCS();
-    } else if (tab === "mid") {
-        drawMid();
-    } else if (tab === "cb") {
-        drawCB();
-    } else {
-        drawRoberts();
-    }
+    if      (tab === "cs")  drawCS();
+    else if (tab === "mid") drawMid();
+    else if (tab === "cb")  drawCB();
+    // "rob" — Three.js рендерит независимо
 }
 
 // ─── клик по canvas ──────────────────────────
@@ -295,7 +439,15 @@ function switchTab(t) {
     );
     buildTable([]);
     setResult("");
-    redraw();
+
+    if (t === "rob") {
+        canvas.style.display = "none";
+        initRoberts3D();
+    } else {
+        destroyRoberts3D();
+        canvas.style.display = "block";
+        redraw();
+    }
 }
 
 // ─── Cohen-Sutherland ────────────────────────
@@ -397,22 +549,46 @@ function runCB() {
 }
 
 // ─── Roberts ─────────────────────────────────
+/**
+ * При нажатии кнопки «Определить видимые грани»:
+ *  1. Считываем текущую позицию камеры из Three.js (если сцена инициализирована)
+ *     и вычисляем нормализованный вектор взгляда.
+ *  2. Обновляем поля ввода, чтобы они отражали реальный вектор взгляда.
+ *  3. Отправляем запрос на бэкенд → заполняем таблицу шагов.
+ */
 function runRoberts() {
-    const vx = Number(document.getElementById("rob-vx").value);
-    const vy = Number(document.getElementById("rob-vy").value);
-    const vz = Number(document.getElementById("rob-vz").value);
+    let vx, vy, vz;
+
+    if (robThree && robThree.camera) {
+        // Берём направление от позиции камеры к началу координат (центр куба)
+        const cam = robThree.camera.position;
+        const len = Math.sqrt(cam.x * cam.x + cam.y * cam.y + cam.z * cam.z) || 1;
+        vx = cam.x / len;
+        vy = cam.y / len;
+        vz = cam.z / len;
+
+        // Синхронизируем поля ввода с текущим вектором
+        document.getElementById("rob-vx").value = vx.toFixed(3);
+        document.getElementById("rob-vy").value = vy.toFixed(3);
+        document.getElementById("rob-vz").value = vz.toFixed(3);
+    } else {
+        // Сцена ещё не готова — используем поля ввода вручную
+        vx = Number(document.getElementById("rob-vx").value);
+        vy = Number(document.getElementById("rob-vy").value);
+        vz = Number(document.getElementById("rob-vz").value);
+    }
+
     rob.viewDir = [vx, vy, vz];
 
     fetch("/lab8/roberts", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({view_dir: rob.viewDir})
+        body: JSON.stringify({ view_dir: rob.viewDir })
     }).then(r => r.json()).then(data => {
         rob.results = data.results;
         buildTable(data.table);
         const vis = data.results.filter(r => r.visible).map(r => r.name);
         setResult(`Видимые грани: ${vis.join(", ") || "нет"}`);
-        redraw();
     });
 }
 
@@ -440,6 +616,13 @@ function resetAll() {
     cbMode = "poly";
     rob.results = [];
     buildTable([]); setResult("");
+
+    // Пересоздаём Three.js сцену, если мы на вкладке Робертса
+    if (tab === "rob") {
+        destroyRoberts3D();
+        initRoberts3D();
+    }
+
     setStatus("Готов");
     redraw();
 }

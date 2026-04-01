@@ -118,50 +118,15 @@ def midpoint_subdivision(x1, y1, x2, y2, x_min, x_max, y_min, y_max, eps=0.0001)
     table = []
     x1, y1, x2, y2 = float(x1), float(y1), float(x2), float(y2)
 
-    # Вспомогательная функция для проверки, находится ли точка внутри окна
     def is_inside(x, y):
         return x_min <= x <= x_max and y_min <= y <= y_max
 
-    # Вспомогательная функция для проверки тривиальной видимости
     def is_trivial_visible(c1, c2):
         return (c1 | c2) == 0
 
-    # Вспомогательная функция для проверки тривиальной невидимости
     def is_trivial_invisible(c1, c2):
         return (c1 & c2) != 0
 
-    # Рекурсивная функция для нахождения пересечения
-    def find_intersection(px1, py1, px2, py2, c1, c2, depth=0, points=None):
-        if points is None:
-            points = []
-
-        # Если отрезок мал или достигнута максимальная глубина
-        length = math.hypot(px2 - px1, py2 - py1)
-        if length < eps or depth > 50:
-            return None
-
-        # Находим среднюю точку
-        mx = (px1 + px2) / 2
-        my = (py1 + py2) / 2
-        code_mid = _outcode(mx, my, x_min, x_max, y_min, y_max)
-
-        # Если средняя точка внутри, проверяем каждую половину
-        if is_inside(mx, my):
-            points.append((mx, my))
-            # Проверяем первую половину
-            if not is_trivial_visible(c1, code_mid):
-                find_intersection(px1, py1, mx, my, c1, code_mid, depth + 1, points)
-            # Проверяем вторую половину
-            if not is_trivial_visible(code_mid, c2):
-                find_intersection(mx, my, px2, py2, code_mid, c2, depth + 1, points)
-        else:
-            # Средняя точка вне окна - продолжаем поиск в обе стороны
-            find_intersection(px1, py1, mx, my, c1, code_mid, depth + 1, points)
-            find_intersection(mx, my, px2, py2, code_mid, c2, depth + 1, points)
-
-        return points
-
-    # Основная функция отсечения
     def clip_segment(px1, py1, px2, py2, depth=0, step_counter=None):
         if step_counter is None:
             step_counter = [0]
@@ -182,17 +147,14 @@ def midpoint_subdivision(x1, y1, x2, y2, x_min, x_max, y_min, y_max, eps=0.0001)
             "Действие": ""
         })
 
-        # Тривиально видим
         if is_trivial_visible(code1, code2):
             table[-1]["Действие"] = "Тривиально видим"
             return [(px1, py1), (px2, py2)]
 
-        # Тривиально невидим
         if is_trivial_invisible(code1, code2):
             table[-1]["Действие"] = "Тривиально невидим"
             return None
 
-        # Проверка на вырожденность отрезка
         length = math.hypot(px2 - px1, py2 - py1)
         if length < eps:
             if is_inside(px1, py1):
@@ -202,16 +164,13 @@ def midpoint_subdivision(x1, y1, x2, y2, x_min, x_max, y_min, y_max, eps=0.0001)
                 table[-1]["Действие"] = "Точка вне окна"
                 return None
 
-        # Деление отрезка средней точкой
         mx = (px1 + px2) / 2
         my = (py1 + py2) / 2
         table[-1]["Действие"] = f"Деление в точке ({mx:.2f},{my:.2f})"
 
-        # Рекурсивно обрабатываем обе половины
-        left_seg = clip_segment(px1, py1, mx, my, depth + 1, step_counter)
+        left_seg  = clip_segment(px1, py1, mx, my, depth + 1, step_counter)
         right_seg = clip_segment(mx, my, px2, py2, depth + 1, step_counter)
 
-        # Объединяем результаты
         if left_seg is None and right_seg is None:
             return None
         elif left_seg is None:
@@ -219,10 +178,10 @@ def midpoint_subdivision(x1, y1, x2, y2, x_min, x_max, y_min, y_max, eps=0.0001)
         elif right_seg is None:
             return left_seg
         else:
-            # Соединяем сегменты, избегая дублирования точки соединения
             result = list(left_seg)
-            if len(result) > 0 and len(right_seg) > 0:
-                if abs(result[-1][0] - right_seg[0][0]) > eps or abs(result[-1][1] - right_seg[0][1]) > eps:
+            if result and right_seg:
+                if abs(result[-1][0] - right_seg[0][0]) > eps or \
+                   abs(result[-1][1] - right_seg[0][1]) > eps:
                     result.extend(right_seg)
                 else:
                     result.extend(right_seg[1:])
@@ -230,17 +189,13 @@ def midpoint_subdivision(x1, y1, x2, y2, x_min, x_max, y_min, y_max, eps=0.0001)
                 result.extend(right_seg)
             return result
 
-    # Запускаем рекурсивное отсечение
     result_points = clip_segment(x1, y1, x2, y2)
 
     if result_points is None or len(result_points) < 2:
         return False, None, table
 
-    # Преобразуем точки в формат [x1, y1, x2, y2]
-    # Возможны несколько сегментов, но для простоты берем первый и последний
     x1c, y1c = result_points[0]
     x2c, y2c = result_points[-1]
-
     return True, [round(x1c, 4), round(y1c, 4), round(x2c, 4), round(y2c, 4)], table
 
 
@@ -249,7 +204,7 @@ def midpoint_subdivision(x1, y1, x2, y2, x_min, x_max, y_min, y_max, eps=0.0001)
 # ─────────────────────────────────────────────
 
 def _poly_signed_area(vertices):
-    """Знаковая площадь многоугольника. >0 → CCW (мат. система), <0 → CW."""
+    """Знаковая площадь многоугольника. >0 → CCW, <0 → CW."""
     n = len(vertices)
     s = 0.0
     for i in range(n):
@@ -262,41 +217,29 @@ def _poly_signed_area(vertices):
 def cyrus_beck(x1, y1, x2, y2, vertices):
     """
     Алгоритм Кируса–Бэка для выпуклого многоугольника.
-    vertices — список вершин многоугольника [x, y].
-    Внутренние нормали вычисляются автоматически с учётом обхода.
+    vertices — список вершин [x, y].
     Возвращает (visible, clipped_segment, table).
-
-    Соглашение (n — внутренняя нормаль):
-      n·D > 0  →  потенциально ВХОДЯЩАЯ точка  → t_enter = max(t_enter, t)
-      n·D < 0  →  потенциально ВЫХОДЯЩАЯ точка → t_exit  = min(t_exit,  t)
     """
     table = []
     dx = x2 - x1
     dy = y2 - y1
 
     t_enter = 0.0
-    t_exit = 1.0
+    t_exit  = 1.0
     nv = len(vertices)
 
-    # Определяем знак поворота, чтобы нормали всегда смотрели ВНУТРЬ
-    # CCW (signed_area > 0): внутренняя нормаль = (-edge_dy,  edge_dx)
-    # CW  (signed_area < 0): внутренняя нормаль = ( edge_dy, -edge_dx)
     sign = 1 if _poly_signed_area(vertices) >= 0 else -1
 
     for i in range(nv):
-        ex = vertices[i][0];
-        ey = vertices[i][1]
-        ex2 = vertices[(i + 1) % nv][0];
-        ey2 = vertices[(i + 1) % nv][1]
+        ex  = vertices[i][0];      ey  = vertices[i][1]
+        ex2 = vertices[(i + 1) % nv][0]; ey2 = vertices[(i + 1) % nv][1]
 
         edge_dx = ex2 - ex
         edge_dy = ey2 - ey
 
-        # Внутренняя нормаль
         nx = -edge_dy * sign
-        ny = edge_dx * sign
+        ny =  edge_dx * sign
 
-        # w = P1 − F  (F — любая точка на ребре)
         wx = x1 - ex
         wy = y1 - ey
 
@@ -317,13 +260,11 @@ def cyrus_beck(x1, y1, x2, y2, vertices):
         t = -nw / nD
 
         if nD > 0:
-            # Потенциально ВХОДЯЩАЯ точка
             t_type = "Вход"
             t_enter = max(t_enter, t)
         else:
-            # Потенциально ВЫХОДЯЩАЯ точка
             t_type = "Выход"
-            t_exit = min(t_exit, t)
+            t_exit  = min(t_exit, t)
 
         table.append({
             "Ребро": i + 1,
@@ -346,34 +287,48 @@ def cyrus_beck(x1, y1, x2, y2, vertices):
 
     cx1 = round(x1 + t_enter * dx, 4)
     cy1 = round(y1 + t_enter * dy, 4)
-    cx2 = round(x1 + t_exit * dx, 4)
-    cy2 = round(y1 + t_exit * dy, 4)
+    cx2 = round(x1 + t_exit  * dx, 4)
+    cy2 = round(y1 + t_exit  * dy, 4)
     return True, [cx1, cy1, cx2, cy2], table
 
 
 # ══════════════════════════════════════════════════════════════
-#  Часть 2.  Удаление невидимых граней  (алгоритм Робертса)
-#            Для произвольного выпуклого тела.
+#  Часть 2.  Удаление невидимых граней (алгоритм Робертса).
+#
+#  Порядок граней совпадает с Three.js сценой в main.js:
+#    0 Передняя  normal ( 0, 0, 1)
+#    1 Задняя    normal ( 0, 0,-1)
+#    2 Нижняя    normal ( 0,-1, 0)
+#    3 Верхняя   normal ( 0, 1, 0)
+#    4 Левая     normal (-1, 0, 0)
+#    5 Правая    normal ( 1, 0, 0)
 # ══════════════════════════════════════════════════════════════
 
 def roberts_visibility(faces, view_dir):
     """
-    faces    — список граней.  Каждая грань: {'name':str, 'vertices':[[x,y,z],...]}
+    Алгоритм Робертса: определяет видимость граней по скалярному
+    произведению нормали грани и вектора взгляда.
+
+    faces    — список граней {'name': str, 'vertices': [[x,y,z], ...]}
     view_dir — вектор направления взгляда [vx, vy, vz]
-    Возвращает (result_list, table).
-    result_list — [{'name', 'normal', 'dot', 'visible'}]
+               (из позиции камеры к началу координат, нормализованный)
+
+    Грань видима, если n · view_dir > 0
+    (нормаль смотрит навстречу наблюдателю).
+
+    Возвращает (results, table).
     """
 
     def sub(a, b):
-        return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+        return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]
 
     def cross(a, b):
-        return [a[1] * b[2] - a[2] * b[1],
-                a[2] * b[0] - a[0] * b[2],
-                a[0] * b[1] - a[1] * b[0]]
+        return [a[1]*b[2] - a[2]*b[1],
+                a[2]*b[0] - a[0]*b[2],
+                a[0]*b[1] - a[1]*b[0]]
 
     def dot(a, b):
-        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+        return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
 
     def norm(v):
         l = math.sqrt(dot(v, v))
@@ -381,59 +336,73 @@ def roberts_visibility(faces, view_dir):
 
     vd = norm(view_dir)
     results = []
-    table = []
+    table   = []
 
     for face in faces:
         verts = face["vertices"]
         if len(verts) < 3:
             continue
 
-        # Вычисляем нормаль как (V1-V0) × (V2-V0)
+        # Вычисляем нормаль: (V1-V0) × (V2-V0)
         e1 = sub(verts[1], verts[0])
         e2 = sub(verts[2], verts[0])
-        n = norm(cross(e1, e2))
+        n  = norm(cross(e1, e2))
 
+        # Скалярное произведение нормали и вектора взгляда
         d = dot(n, vd)
+
+        # Грань видима, если нормаль направлена навстречу взгляду
         visible = d > 0
 
         results.append({
-            "name": face["name"],
-            "normal": [round(c, 3) for c in n],
-            "dot": round(d, 4),
+            "name":    face["name"],
+            "normal":  [round(c, 3) for c in n],
+            "dot":     round(d, 4),
             "visible": visible,
         })
         table.append({
-            "Грань": face["name"],
-            "Нормаль": f"({n[0]:.3f}, {n[1]:.3f}, {n[2]:.3f})",
-            "n·v": round(d, 4),
-            "Видима?": "Да" if visible else "Нет",
+            "Грань":    face["name"],
+            "Нормаль":  f"({n[0]:.3f}, {n[1]:.3f}, {n[2]:.3f})",
+            "n·v":      round(d, 4),
+            "Видима?":  "Да" if visible else "Нет",
         })
 
     return results, table
 
 
 def make_cube_faces(cx=0, cy=0, cz=0, size=1):
-    """Возвращает грани куба с центром (cx,cy,cz) и полуребром size."""
+    """
+    Возвращает грани куба с центром (cx,cy,cz) и полуребром size.
+    Порядок граней совпадает с Three.js сценой:
+      Передняя, Задняя, Нижняя, Верхняя, Левая, Правая
+    (нормали: +Z, -Z, -Y, +Y, -X, +X)
+    """
     h = size
     return [
+        # 0 — Передняя  (+Z)
         {"name": "Передняя", "vertices": [
-            [cx - h, cy - h, cz + h], [cx + h, cy - h, cz + h],
-            [cx + h, cy + h, cz + h], [cx - h, cy + h, cz + h]]},
+            [cx-h, cy-h, cz+h], [cx+h, cy-h, cz+h],
+            [cx+h, cy+h, cz+h], [cx-h, cy+h, cz+h]]},
+        # 1 — Задняя    (-Z)
         {"name": "Задняя", "vertices": [
-            [cx + h, cy - h, cz - h], [cx - h, cy - h, cz - h],
-            [cx - h, cy + h, cz - h], [cx + h, cy + h, cz - h]]},
-        {"name": "Левая", "vertices": [
-            [cx - h, cy - h, cz - h], [cx - h, cy - h, cz + h],
-            [cx - h, cy + h, cz + h], [cx - h, cy + h, cz - h]]},
-        {"name": "Правая", "vertices": [
-            [cx + h, cy - h, cz + h], [cx + h, cy - h, cz - h],
-            [cx + h, cy + h, cz - h], [cx + h, cy + h, cz + h]]},
-        {"name": "Верхняя", "vertices": [
-            [cx - h, cy + h, cz + h], [cx + h, cy + h, cz + h],
-            [cx + h, cy + h, cz - h], [cx - h, cy + h, cz - h]]},
+            [cx-h, cy-h, cz-h], [cx+h, cy-h, cz-h],
+            [cx+h, cy+h, cz-h], [cx-h, cy+h, cz-h]]},
+        # 2 — Нижняя    (-Y)
         {"name": "Нижняя", "vertices": [
-            [cx - h, cy - h, cz - h], [cx + h, cy - h, cz - h],
-            [cx + h, cy - h, cz + h], [cx - h, cy - h, cz + h]]},
+            [cx-h, cy-h, cz-h], [cx+h, cy-h, cz-h],
+            [cx+h, cy-h, cz+h], [cx-h, cy-h, cz+h]]},
+        # 3 — Верхняя   (+Y)
+        {"name": "Верхняя", "vertices": [
+            [cx-h, cy+h, cz+h], [cx+h, cy+h, cz+h],
+            [cx+h, cy+h, cz-h], [cx-h, cy+h, cz-h]]},
+        # 4 — Левая     (-X)
+        {"name": "Левая", "vertices": [
+            [cx-h, cy-h, cz-h], [cx-h, cy-h, cz+h],
+            [cx-h, cy+h, cz+h], [cx-h, cy+h, cz-h]]},
+        # 5 — Правая    (+X)
+        {"name": "Правая", "vertices": [
+            [cx+h, cy-h, cz+h], [cx+h, cy-h, cz-h],
+            [cx+h, cy+h, cz-h], [cx+h, cy+h, cz+h]]},
     ]
 
 
