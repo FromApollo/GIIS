@@ -2,140 +2,214 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Лаб 8 — Отсечение невидимых линий и граней</title>
+    <title>Лаб 8: Отсечение и невидимые грани</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
-        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
-        .group   { display: flex; gap: 5px; align-items: center;
-                   border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; }
-        .group b { margin-right: 4px; }
-        button   { padding: 6px 12px; font-size: 14px; cursor: pointer; }
-        button.active { background: #4a90d9; color: #fff; }
-        .tab-btn  { border-bottom: none; border-radius: 4px 4px 0 0; margin-bottom: -1px; }
-        .tabs     { display: flex; gap: 4px; margin-bottom: 0; border-bottom: 1px solid #ccc; }
-        .tab-panel { border: 1px solid #ccc; border-top: none;
-                     padding: 8px; border-radius: 0 0 4px 4px; margin-bottom: 8px; }
-        input[type=number] { width: 52px; padding: 3px; font-size: 13px; }
-        input[type=range]  { vertical-align: middle; }
-        #canvas  { border: 1px solid #aaa; cursor: crosshair; display: block; margin-top: 6px; }
-        #status  { margin: 4px 0; color: #666; font-style: italic; }
-        #result  { margin: 4px 0; font-weight: bold; font-size: 15px; }
-        table    { border-collapse: collapse; margin-top: 6px; font-size: 12px; overflow-x: auto; display: block; }
-        th, td   { border: 1px solid #ccc; padding: 3px 8px; }
-        th       { background: #f0f0f0; }
-        .legend  { font-size: 12px; color: #555; margin: 3px 0; }
-        label    { font-size: 13px; }
+        body { font-family: sans-serif; padding: 16px; background:#fff; }
+
+        h1 { font-size: 20px; margin-bottom: 10px; }
+
+        /* ── вкладки ── */
+        .tabs { display: flex; gap: 4px; margin-bottom: 0; }
+        .tab-btn {
+            padding: 7px 16px; font-size: 14px; cursor: pointer;
+            border: 1px solid #aaa; background: #f0f0f0;
+            border-radius: 6px 6px 0 0; border-bottom: none;
+        }
+        .tab-btn.active { background: #2a9d8f; color: #fff; border-color: #2a9d8f; }
+
+        /* ── панели ── */
+        .tab-panel {
+            border: 1px solid #aaa; border-radius: 0 6px 6px 6px;
+            padding: 10px 12px; margin-bottom: 8px;
+        }
+
+        /* ── управление ── */
+        .ctrl-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .ctrl-group {
+            display: flex; gap: 5px; align-items: center;
+            border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px;
+        }
+        .ctrl-group b { font-size: 13px; margin-right: 2px; }
+        button { padding: 5px 11px; font-size: 13px; cursor: pointer; border: 1px solid #aaa;
+                 background: #f5f5f5; border-radius: 4px; }
+        button:hover { background: #e0e0e0; }
+        button.active { background: #2a9d8f; color: #fff; border-color: #2a9d8f; }
+        input[type=number] { width: 52px; font-size: 13px; padding: 2px 4px; }
+
+        /* ── canvas + таблица рядом ── */
+        .layout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+        canvas { border: 1px solid #bbb; display: block; background: #fff; }
+
+        /* ── таблица ── */
+        #table { border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+        #table th, #table td { border: 1px solid #ccc; padding: 3px 7px; white-space: nowrap; }
+        #table th { background: #f0f0f0; }
+
+        /* ── статус / результат ── */
+        #status { color: #555; font-style: italic; font-size: 13px; margin: 4px 0; }
+        #result { font-weight: bold; font-size: 14px; margin: 4px 0; color: #1a1a1a; }
+
+        /* ── легенда ── */
+        .legend { display: flex; gap: 16px; font-size: 12px; margin: 4px 0; align-items: center; }
+        .lsq { display: inline-block; width: 22px; height: 10px;
+                vertical-align: middle; margin-right: 3px; border: 1px solid #999; }
+
+        /* ── подсказка по вектору ── */
+        .view-hint {
+            margin-top: 8px; padding: 8px 12px;
+            background: #f0f8ff; border: 1px solid #b0d4f1;
+            border-radius: 4px; font-size: 12px; line-height: 1.6;
+        }
+        .view-hint b { color: #1a5276; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Лаб 8 — Отсечение невидимых линий и граней</h1>
-        <nav>
-            <button onclick="location.href='/'">← Меню</button>
-            <button onclick="resetAll()">Сброс</button>
-            <label style="margin-left:12px;">Масштаб:
-                <input type="range" id="scale" min="10" max="40" value="20">
-            </label>
-        </nav>
-    </header>
+<header>
+    <h1>Лабораторная 8: Отсечение невидимых линий и граней</h1>
+    <button onclick="location.href='/'">← Меню</button>
+</header>
 
-    <!-- ВКЛАДКИ -->
-    <div class="tabs">
-        <button class="tab-btn active" data-tab="cs"  onclick="switchTab('cs')">Коэна – Сазерленда</button>
-        <button class="tab-btn"        data-tab="mid" onclick="switchTab('mid')">Разбиение средней точкой</button>
-        <button class="tab-btn"        data-tab="cb"  onclick="switchTab('cb')">Кируса – Бэка</button>
-        <button class="tab-btn"        data-tab="rob" onclick="switchTab('rob')">Алгоритм Робертса (3D)</button>
+<!-- ── вкладки ── -->
+<div class="tabs" style="margin-top:12px">
+    <button class="tab-btn active" data-tab="cs"  onclick="switchTab('cs')">Коэн–Сазерленд</button>
+    <button class="tab-btn"        data-tab="mid" onclick="switchTab('mid')">Средняя точка</button>
+    <button class="tab-btn"        data-tab="cb"  onclick="switchTab('cb')">Кирус–Бэк</button>
+    <button class="tab-btn"        data-tab="rob" onclick="switchTab('rob')">Алгоритм Робертса</button>
+</div>
+
+<!-- ══ CS ══ -->
+<div class="tab-panel" id="panel-cs">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Окно:</b>
+            xmin <input type="number" id="cs-xmin" value="3">
+            xmax <input type="number" id="cs-xmax" value="13">
+            ymin <input type="number" id="cs-ymin" value="3">
+            ymax <input type="number" id="cs-ymax" value="11">
+            <button onclick="updateCSWindow()">Применить</button>
+        </div>
+        <div class="ctrl-group">
+            <b>Масштаб:</b>
+            <input type="range" id="scale" min="15" max="45" value="20" style="width:90px">
+        </div>
+        <button onclick="runCS()" class="active">Отсечь</button>
+        <button onclick="resetAll()">��брос</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
+        <div><span class="lsq" style="background:#e63946;border-color:#e63946"></span>Видимая часть</div>
+        <div><span class="lsq" style="background:rgba(42,157,143,0.15);border:2px solid #2a9d8f"></span>Окно отсечения</div>
+    </div>
+    <p style="font-size:12px;color:#555;margin:3px 0">
+        Клик 1 — точка P1, клик 2 — точка P2. Координаты привязываются к сетке.
+    </p>
+</div>
+
+<!-- ══ Midpoint ══ -->
+<div class="tab-panel" id="panel-mid" style="display:none">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Окно:</b>
+            xmin <input type="number" id="mid-xmin" value="3">
+            xmax <input type="number" id="mid-xmax" value="13">
+            ymin <input type="number" id="mid-ymin" value="3">
+            ymax <input type="number" id="mid-ymax" value="11">
+            <button onclick="updateMidWindow()">Применить</button>
+        </div>
+        <button onclick="runMidpoint()" class="active">Отсечь</button>
+        <button onclick="resetAll()">Сброс</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
+        <div><span class="lsq" style="background:#e63946;border-color:#e63946"></span>Видимая часть</div>
+        <div><span class="lsq" style="background:rgba(42,157,143,0.15);border:2px solid #2a9d8f"></span>Окно отсечения</div>
+    </div>
+    <p style="font-size:12px;color:#555;margin:3px 0">
+        Клик 1 — точка P1, клик 2 — точка P2.
+    </p>
+</div>
+
+<!-- ══ CB ══ -->
+<div class="tab-panel" id="panel-cb" style="display:none">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Режим:</b>
+            <button id="cbm-poly" class="active" onclick="setCBMode('poly')">Многоугольник</button>
+            <button id="cbm-seg"               onclick="setCBMode('seg')">Отрезок</button>
+        </div>
+        <button onclick="closeCBPoly()">Замкнуть</button>
+        <button onclick="runCB()" class="active">Отсечь</button>
+        <button onclick="resetAll()">Сброс</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(42,157,143,0.15);border:2px solid #2a9d8f"></span>Выпуклый многоугольник</div>
+        <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
+        <div><span class="lsq" style="background:#e63946;border-color:#e63946"></span>Видимая часть</div>
+    </div>
+    <p style="font-size:12px;color:#555;margin:3px 0">
+        Сначала задайте выпуклый многоугольник (режим «Многоугольник» → клики → «Замкнуть»),
+        затем переключитесь на «Отрезок» и задайте два клика.
+    </p>
+</div>
+
+<!-- ══ Roberts ══ -->
+<div class="tab-panel" id="panel-rob" style="display:none">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Поворот X:</b>
+            <input type="range" id="rob-rx" min="0" max="360" value="0" style="width:100px">
+            <span id="rob-rx-val" style="min-width:40px">0°</span>
+        </div>
+        <div class="ctrl-group">
+            <b>Y:</b>
+            <input type="range" id="rob-ry" min="0" max="360" value="0" style="width:100px">
+            <span id="rob-ry-val" style="min-width:40px">0°</span>
+        </div>
+        <div class="ctrl-group">
+            <b>Z:</b>
+            <input type="range" id="rob-rz" min="0" max="360" value="0" style="width:100px">
+            <span id="rob-rz-val" style="min-width:40px">0°</span>
+        </div>
+        <button onclick="runRoberts()" class="active">Рассчитать</button>
+        <button onclick="resetAll()">Сброс</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(69,123,157,0.35);border:2px solid #457b9d"></span>Видимая грань</div>
+        <div><span class="lsq" style="background:rgba(200,200,200,0.15);border:2px dashed #bbb"></span>Скрытая грань</div>
     </div>
 
-    <!-- ПАНЕЛЬ: Cohen-Sutherland -->
-    <div id="panel-cs" class="tab-panel">
-        <div class="toolbar">
-            <div class="group">
-                <b>Окно:</b>
-                x: <input type="number" id="cs-xmin" value="3"> –
-                   <input type="number" id="cs-xmax" value="13">
-                &nbsp; y: <input type="number" id="cs-ymin" value="3"> –
-                          <input type="number" id="cs-ymax" value="11">
-                <button onclick="updateCSWindow()">Применить окно</button>
-            </div>
-            <div class="group">
-                <button onclick="runCS()">Выполнить отсечение</button>
-            </div>
-        </div>
-        <div class="legend">
-            Клик 1 → P1, клик 2 → P2. Зелёный прямоугольник — окно отсечения.
-            Пунктир — исходный отрезок, <span style="color:#e63946">красный</span> — отсечённый.
-        </div>
+    <div class="view-hint">
+        <b>Управление:</b> вращайте куб слайдерами и нажмите «Рассчитать».<br>
+        Вектор взгляда фиксирован (изометрическая проекция: наблюдатель справа-сверху-спереди).<br>
+        Грань <em>видима</em>, если её нормаль направлена к наблюдателю (n·v &gt; 0).<br><br>
+        <b>Примеры:</b><br>
+        • <b>X=0, Y=0, Z=0</b> — исходное положение: видны Передняя, Правая, Верхняя<br>
+        • <b>Y=180°</b> — куб повёрнут на 180° вокруг Y: видны Задняя, Левая, Верхняя<br>
+        • <b>X=90°</b> — куб повёрнут на 90° вокруг X: видны Передняя, Правая, Нижняя
     </div>
+</div>
 
-    <!-- ПАНЕЛЬ: Midpoint Subdivision -->
-    <div id="panel-mid" class="tab-panel" style="display:none">
-        <div class="toolbar">
-            <div class="group">
-                <b>Окно:</b>
-                x: <input type="number" id="mid-xmin" value="3"> –
-                   <input type="number" id="mid-xmax" value="13">
-                &nbsp; y: <input type="number" id="mid-ymin" value="3"> –
-                          <input type="number" id="mid-ymax" value="11">
-                <button onclick="updateMidWindow()">Применить окно</button>
-            </div>
-            <div class="group">
-                <button onclick="runMidpoint()">Выполнить отсечение (средняя точка)</button>
-            </div>
-        </div>
-        <div class="legend">
-            <strong>Алгоритм разбиения средней точкой (Midpoint Subdivision)</strong> — использует двоичный поиск
-            для нахождения пересечения отрезка с окном. Клик 1 → P1, клик 2 → P2.
-            Пунктир — исходный отрезок, <span style="color:#e63946">красный</span> — отсечённый.
-        </div>
+<!-- ── canvas + таблица ── -->
+<div class="layout" style="margin-top:8px">
+    <div>
+        <div id="status">Готов</div>
+        <canvas id="canvas" width="580" height="440"></canvas>
+        <div id="result"></div>
     </div>
-
-    <!-- ПАНЕЛЬ: Cyrus-Beck -->
-    <div id="panel-cb" class="tab-panel" style="display:none">
-        <div class="toolbar">
-            <div class="group">
-                <b>Режим:</b>
-                <button id="cbm-poly" class="active" onclick="setCBMode('poly')">Многоугольник (выпуклый)</button>
-                <button id="cbm-seg"  onclick="setCBMode('seg')">Отрезок</button>
-                <button onclick="closeCBPoly()">Замкнуть</button>
-            </div>
-            <div class="group">
-                <button onclick="runCB()">Выполнить отсечение (К–Б)</button>
-            </div>
-        </div>
-        <div class="legend">
-            Сначала постройте выпуклый многоугольник (замкните), затем задайте отрезок двумя кликами.
-        </div>
-    </div>
-
-    <!-- ПАНЕЛЬ: Roberts 3D -->
-    <div id="panel-rob" class="tab-panel" style="display:none">
-        <div class="toolbar">
-            <div class="group">
-                <b>Вектор взгляда:</b>
-                vx: <input type="number" id="rob-vx" value="-1" step="0.5">
-                vy: <input type="number" id="rob-vy" value="0"  step="0.5">
-                vz: <input type="number" id="rob-vz" value="-1" step="0.5">
-            </div>
-            <div class="group">
-                <button onclick="runRoberts()">Определить видимые грани</button>
-            </div>
-        </div>
-        <div class="legend">
-            Куб со стороной 2 в начале координат. Голубые грани — видимые, серые пунктиром — невидимые.
-        </div>
-    </div>
-
-    <!-- CANVAS -->
-    <div id="status">Выберите вкладку и задайте данные</div>
-    <canvas id="canvas" width="620" height="480"></canvas>
-    <div id="result"></div>
-
-    <h3>Таблица шагов</h3>
-    <div style="overflow-x:auto;">
+    <div style="flex:1;min-width:280px;max-width:600px;overflow-x:auto">
         <table id="table"></table>
     </div>
+</div>
 
-    <script src="/static/lab8/main.js"></script>
+<!-- Добавьте эти строки перед подключением main.js -->
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+        }
+    }
+</script>
+<script src="/static/lab8/main.js?v=5"></script>
 </body>
 </html>

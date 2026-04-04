@@ -206,13 +206,14 @@ function createRobQuadMesh(THREE, verts, indices, color, normalArr) {
  * Скрывает 2D canvas и добавляет WebGL canvas прямо рядом с ним.
  * Алгоритм Робертса выполняется в каждом кадре (real-time).
  */
+// Замените функцию initRoberts3D на эту исправленную версию:
+
 async function initRoberts3D() {
     if (robThree) return;
 
     const W = canvas.offsetWidth  || canvas.width;
     const H = canvas.offsetHeight || canvas.height;
 
-    // Контейнер-обёртка для Three.js, вставляется после 2D canvas
     const container = document.createElement("div");
     container.id = "rob-three-container";
     container.style.cssText = [
@@ -222,7 +223,6 @@ async function initRoberts3D() {
     ].join(";");
     canvas.parentNode.insertBefore(container, canvas.nextSibling);
 
-    // Метка с подсказкой
     const hint = document.createElement("div");
     hint.style.cssText = [
         "position:absolute", "bottom:12px", "right:12px",
@@ -234,67 +234,75 @@ async function initRoberts3D() {
     container.appendChild(hint);
 
     try {
-        // Динамическая загрузка Three.js (ES-модуль)
-        const THREE = await import("https://cdn.skypack.dev/three@0.128.0");
-        const { OrbitControls } = await import("https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/OrbitControls.js");
+        const THREE = await import("three");
+        const { OrbitControls } = await import("three/addons/controls/OrbitControls.js");
 
-        // ── Сцена ──────────────────────────────────────────────
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xffffff);
+        scene.background = new THREE.Color(0xffffff); // Белый фон
 
-        // ── Камера ────────────────────────────────────────────
         const camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 1000);
         camera.position.set(4, 3, 5);
         camera.lookAt(0, 0, 0);
 
-        // ── Рендерер ──────────────────────────────────────────
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(W, H);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.domElement.style.display = "block";
         container.appendChild(renderer.domElement);
 
-        // ── OrbitControls ─────────────────────────────────────
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping  = true;
-        controls.dampingFactor  = 0.05;
-        controls.rotateSpeed    = 1.5;
-        controls.zoomSpeed      = 1.2;
-        controls.panSpeed       = 0.8;
-        controls.enableZoom     = true;
-        controls.enablePan      = true;
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 1.5;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.enableZoom = true;
+        controls.enablePan = true;
         controls.target.set(0, 0, 0);
 
-        // ── Освещение ─────────────────────────────────────────
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        dirLight.position.set(2, 3, 2);
-        scene.add(dirLight);
-        const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        backLight.position.set(-1, 1, -2);
-        scene.add(backLight);
+        // Убираем освещение - оно больше не нужно
+        // scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        // const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        // dirLight.position.set(2, 3, 2);
+        // scene.add(dirLight);
+        // const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        // backLight.position.set(-1, 1, -2);
+        // scene.add(backLight);
 
-        // ── Вершины куба (−1..+1) ─────────────────────────────
         const verts = [
-            [-1,-1, 1],  // 0
-            [ 1,-1, 1],  // 1
-            [ 1, 1, 1],  // 2
-            [-1, 1, 1],  // 3
-            [-1,-1,-1],  // 4
-            [ 1,-1,-1],  // 5
-            [ 1, 1,-1],  // 6
-            [-1, 1,-1],  // 7
+            [-1,-1, 1], [ 1,-1, 1], [ 1, 1, 1], [-1, 1, 1],
+            [-1,-1,-1], [ 1,-1,-1], [ 1, 1,-1], [-1, 1,-1],
         ];
 
-        // ── Грани куба (как в d.html) ─────────────────────────
         const faceDefs = [
-            { indices:[0,1,2,3], color:0x3399ff, normal:[ 0, 0, 1], name:"Передняя" },
-            { indices:[4,7,6,5], color:0x3399ff, normal:[ 0, 0,-1], name:"Задняя"   },
-            { indices:[0,4,5,1], color:0x3399ff, normal:[ 0,-1, 0], name:"Нижняя"   },
-            { indices:[2,6,7,3], color:0x3399ff, normal:[ 0, 1, 0], name:"Верхняя"  },
-            { indices:[0,3,7,4], color:0x3399ff, normal:[-1, 0, 0], name:"Левая"    },
-            { indices:[1,5,6,2], color:0x3399ff, normal:[ 1, 0, 0], name:"Правая"   },
+            { indices:[0,1,2,3], color:0xffffff, normal:[ 0, 0, 1], name:"Передняя" },
+            { indices:[4,7,6,5], color:0xffffff, normal:[ 0, 0,-1], name:"Задняя"   },
+            { indices:[0,4,5,1], color:0xffffff, normal:[ 0,-1, 0], name:"Нижняя"   },
+            { indices:[2,6,7,3], color:0xffffff, normal:[ 0, 1, 0], name:"Верхняя"  },
+            { indices:[0,3,7,4], color:0xffffff, normal:[-1, 0, 0], name:"Левая"    },
+            { indices:[1,5,6,2], color:0xffffff, normal:[ 1, 0, 0], name:"Правая"   },
         ];
+
+        function createRobQuadMesh(THREE, verts, indices, color, normalArr) {
+            const [v0, v1, v2, v3] = indices.map(i => verts[i]);
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([
+                v0[0], v0[1], v0[2], v1[0], v1[1], v1[2],
+                v2[0], v2[1], v2[2], v3[0], v3[1], v3[2],
+            ]), 3));
+            geometry.setIndex([0, 1, 2, 0, 2, 3]);
+            geometry.computeVertexNormals();
+
+            // Используем MeshBasicMaterial - не требует освещения
+            const material = new THREE.MeshBasicMaterial({
+                color: color,
+                side: THREE.DoubleSide  // Опционально: показывать обе стороны граней
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.userData.normal = new THREE.Vector3(...normalArr).normalize();
+            return mesh;
+        }
 
         const meshes = [];
         faceDefs.forEach(fd => {
@@ -304,7 +312,6 @@ async function initRoberts3D() {
             meshes.push(mesh);
         });
 
-        // ── Рёбра куба (чёрный контур) ────────────────────────
         const edgesGeo = new THREE.BoxGeometry(2, 2, 2);
         const edges = new THREE.LineSegments(
             new THREE.EdgesGeometry(edgesGeo),
@@ -312,20 +319,16 @@ async function initRoberts3D() {
         );
         scene.add(edges);
 
-        // ── Лёгкие оси координат ──────────────────────────────
         const axes = new THREE.AxesHelper(3);
         axes.material.transparent = true;
         axes.material.opacity = 0.15;
         scene.add(axes);
 
-        // ── Алгоритм Робертса: обновление видимости ───────────
         function updateVisibilityRoberts() {
             const camPos = camera.position;
             meshes.forEach(mesh => {
                 const n = mesh.userData.normal;
                 if (!n) return;
-
-                // Вычисляем центр грани
                 const pos = mesh.geometry.attributes.position.array;
                 const cnt = pos.length / 3;
                 const center = new THREE.Vector3();
@@ -335,18 +338,11 @@ async function initRoberts3D() {
                     center.z += pos[i * 3 + 2];
                 }
                 center.divideScalar(cnt);
-
-                // Вектор от центра грани к камере
-                const viewDir = new THREE.Vector3()
-                    .subVectors(camPos, center)
-                    .normalize();
-
-                // Алгоритм Робертса: грань видима, если n·viewDir > 0
+                const viewDir = new THREE.Vector3().subVectors(camPos, center).normalize();
                 mesh.visible = n.dot(viewDir) > 0;
             });
         }
 
-        // ── Цикл анимации ─────────────────────────────────────
         let animId;
         function animate() {
             animId = requestAnimationFrame(animate);
@@ -356,18 +352,12 @@ async function initRoberts3D() {
         }
         animate();
 
-        // Сохраняем все объекты для последующей очистки
-        robThree = {
-            container, renderer, scene, camera,
-            controls, meshes, animId, THREE,
-        };
-
+        robThree = { container, renderer, scene, camera, controls, meshes, animId, THREE };
         setStatus("Алгоритм Робертса активен. Синие грани — видимые. Вращайте куб мышью.");
 
     } catch (err) {
-        container.innerHTML =
-            `<p style="color:red;padding:20px;">Ошибка загрузки Three.js:<br>${err.message}</p>`;
         console.error("Three.js load error:", err);
+        container.innerHTML = `<p style="color:red;padding:20px;">Ошибка: ${err.message}</p>`;
     }
 }
 
