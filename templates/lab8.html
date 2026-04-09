@@ -72,8 +72,6 @@
 <!-- ── вкладки ── -->
 <div class="tabs" style="margin-top:12px">
     <button class="tab-btn active" data-tab="cs"  onclick="switchTab('cs')">Коэн–Сазерленд</button>
-    <button class="tab-btn"        data-tab="mid" onclick="switchTab('mid')">Средняя точка</button>
-    <button class="tab-btn"        data-tab="cb"  onclick="switchTab('cb')">Кирус–Бэк</button>
     <button class="tab-btn"        data-tab="rob" onclick="switchTab('rob')">Алгоритм Робертса</button>
 </div>
 
@@ -93,7 +91,7 @@
             <input type="range" id="scale" min="15" max="45" value="20" style="width:90px">
         </div>
         <button onclick="runCS()" class="active">Отсечь</button>
-        <button onclick="resetAll()">��брос</button>
+        <button onclick="resetAll()">Сброс</button>
     </div>
     <div class="legend">
         <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
@@ -154,39 +152,22 @@
 
 <!-- ══ Roberts ══ -->
 <div class="tab-panel" id="panel-rob" style="display:none">
-    <div class="ctrl-row">
+
+        <!-- ── чекбокс прозрачности ── -->
         <div class="ctrl-group">
-            <b>Поворот X:</b>
-            <input type="range" id="rob-rx" min="0" max="360" value="0" style="width:100px">
-            <span id="rob-rx-val" style="min-width:40px">0°</span>
+            <label style="font-size:13px;cursor:pointer;user-select:none">
+                <input type="checkbox" id="rob-transparent" checked>
+                Прозрачный
+            </label>
         </div>
-        <div class="ctrl-group">
-            <b>Y:</b>
-            <input type="range" id="rob-ry" min="0" max="360" value="0" style="width:100px">
-            <span id="rob-ry-val" style="min-width:40px">0°</span>
-        </div>
-        <div class="ctrl-group">
-            <b>Z:</b>
-            <input type="range" id="rob-rz" min="0" max="360" value="0" style="width:100px">
-            <span id="rob-rz-val" style="min-width:40px">0°</span>
-        </div>
-        <button onclick="runRoberts()" class="active">Рассчитать</button>
-        <button onclick="resetAll()">Сброс</button>
+
     </div>
     <div class="legend">
-        <div><span class="lsq" style="background:rgba(69,123,157,0.35);border:2px solid #457b9d"></span>Видимая грань</div>
-        <div><span class="lsq" style="background:rgba(200,200,200,0.15);border:2px dashed #bbb"></span>Скрытая грань</div>
+        <div><span class="lsq" style="background:rgba(69,123,157,0.7);border:2px solid #457b9d"></span>Видимая грань</div>
+        <div><span class="lsq" style="background:rgba(34,34,34,0.25);border:2px dashed #bbb"></span>Скрытая грань (прозрачный режим)</div>
     </div>
 
-    <div class="view-hint">
-        <b>Управление:</b> вращайте куб слайдерами и нажмите «Рассчитать».<br>
-        Вектор взгляда фиксирован (изометрическая проекция: наблюдатель справа-сверху-спереди).<br>
-        Грань <em>видима</em>, если её нормаль направлена к наблюдателю (n·v &gt; 0).<br><br>
-        <b>Примеры:</b><br>
-        • <b>X=0, Y=0, Z=0</b> — исходное положение: видны Передняя, Правая, Верхняя<br>
-        • <b>Y=180°</b> — куб повёрнут на 180° вокруг Y: видны Задняя, Левая, Верхняя<br>
-        • <b>X=90°</b> — куб повёрнут на 90° вокруг X: видны Передняя, Правая, Нижняя
-    </div>
+
 </div>
 
 <!-- ── canvas + таблица ── -->
@@ -201,7 +182,6 @@
     </div>
 </div>
 
-<!-- Добавьте эти строки перед подключением main.js -->
 <script type="importmap">
     {
         "imports": {
@@ -210,6 +190,6 @@
         }
     }
 </script>
-<script src="/static/lab8/main.js?v=5"></script>
+<script src="/static/lab8/main.js?v=6"></script>
 </body>
 </html>
