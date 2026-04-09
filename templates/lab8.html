@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лаб 8: Отсечение и невидимые грани</title>
+    <style>
+        body { font-family: sans-serif; padding: 16px; background:#fff; }
+
+        h1 { font-size: 20px; margin-bottom: 10px; }
+
+        /* ── вкладки ── */
+        .tabs { display: flex; gap: 4px; margin-bottom: 0; }
+        .tab-btn {
+            padding: 7px 16px; font-size: 14px; cursor: pointer;
+            border: 1px solid #aaa; background: #f0f0f0;
+            border-radius: 6px 6px 0 0; border-bottom: none;
+        }
+        .tab-btn.active { background: #2a9d8f; color: #fff; border-color: #2a9d8f; }
+
+        /* ── панели ── */
+        .tab-panel {
+            border: 1px solid #aaa; border-radius: 0 6px 6px 6px;
+            padding: 10px 12px; margin-bottom: 8px;
+        }
+
+        /* ── управление ── */
+        .ctrl-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .ctrl-group {
+            display: flex; gap: 5px; align-items: center;
+            border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px;
+        }
+        .ctrl-group b { font-size: 13px; margin-right: 2px; }
+        button { padding: 5px 11px; font-size: 13px; cursor: pointer; border: 1px solid #aaa;
+                 background: #f5f5f5; border-radius: 4px; }
+        button:hover { background: #e0e0e0; }
+        button.active { background: #2a9d8f; color: #fff; border-color: #2a9d8f; }
+        input[type=number] { width: 52px; font-size: 13px; padding: 2px 4px; }
+
+        /* ── canvas + таблица рядом ── */
+        .layout { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+        canvas { border: 1px solid #bbb; display: block; background: #fff; }
+
+        /* ── таблица ── */
+        #table { border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+        #table th, #table td { border: 1px solid #ccc; padding: 3px 7px; white-space: nowrap; }
+        #table th { background: #f0f0f0; }
+
+        /* ── статус / результат ── */
+        #status { color: #555; font-style: italic; font-size: 13px; margin: 4px 0; }
+        #result { font-weight: bold; font-size: 14px; margin: 4px 0; color: #1a1a1a; }
+
+        /* ── легенда ── */
+        .legend { display: flex; gap: 16px; font-size: 12px; margin: 4px 0; align-items: center; }
+        .lsq { display: inline-block; width: 22px; height: 10px;
+                vertical-align: middle; margin-right: 3px; border: 1px solid #999; }
+
+        /* ── подсказка по вектору ── */
+        .view-hint {
+            margin-top: 8px; padding: 8px 12px;
+            background: #f0f8ff; border: 1px solid #b0d4f1;
+            border-radius: 4px; font-size: 12px; line-height: 1.6;
+        }
+        .view-hint b { color: #1a5276; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Лабораторная 8: Отсечение невидимых линий и граней</h1>
+    <button onclick="location.href='/'">← Меню</button>
+</header>
+
+<!-- ── вкладки ── -->
+<div class="tabs" style="margin-top:12px">
+    <button class="tab-btn active" data-tab="cs"  onclick="switchTab('cs')">Коэн–Сазерленд</button>
+    <button class="tab-btn"        data-tab="rob" onclick="switchTab('rob')">Алгоритм Робертса</button>
+</div>
+
+<!-- ══ CS ══ -->
+<div class="tab-panel" id="panel-cs">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Окно:</b>
+            xmin <input type="number" id="cs-xmin" value="3">
+            xmax <input type="number" id="cs-xmax" value="13">
+            ymin <input type="number" id="cs-ymin" value="3">
+            ymax <input type="number" id="cs-ymax" value="11">
+            <button onclick="updateCSWindow()">Применить</button>
+        </div>
+        <div class="ctrl-group">
+            <b>Масштаб:</b>
+            <input type="range" id="scale" min="15" max="45" value="20" style="width:90px">
+        </div>
+        <button onclick="runCS()" class="active">Отсечь</button>
+        <button onclick="resetAll()">Сброс</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
+        <div><span class="lsq" style="background:#e63946;border-color:#e63946"></span>Видимая часть</div>
+        <div><span class="lsq" style="background:rgba(42,157,143,0.15);border:2px solid #2a9d8f"></span>Окно отсечения</div>
+    </div>
+    <p style="font-size:12px;color:#555;margin:3px 0">
+        Клик 1 — точка P1, клик 2 — точка P2. Координаты привязываются к сетке.
+    </p>
+</div>
+
+<!-- ══ Midpoint ══ -->
+<div class="tab-panel" id="panel-mid" style="display:none">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Окно:</b>
+            xmin <input type="number" id="mid-xmin" value="3">
+            xmax <input type="number" id="mid-xmax" value="13">
+            ymin <input type="number" id="mid-ymin" value="3">
+            ymax <input type="number" id="mid-ymax" value="11">
+            <button onclick="updateMidWindow()">Применить</button>
+        </div>
+        <button onclick="runMidpoint()" class="active">Отсечь</button>
+        <button onclick="resetAll()">Сброс</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
+        <div><span class="lsq" style="background:#e63946;border-color:#e63946"></span>Видимая часть</div>
+        <div><span class="lsq" style="background:rgba(42,157,143,0.15);border:2px solid #2a9d8f"></span>Окно отсечения</div>
+    </div>
+    <p style="font-size:12px;color:#555;margin:3px 0">
+        Клик 1 — точка P1, клик 2 — точка P2.
+    </p>
+</div>
+
+<!-- ══ CB ══ -->
+<div class="tab-panel" id="panel-cb" style="display:none">
+    <div class="ctrl-row">
+        <div class="ctrl-group">
+            <b>Режим:</b>
+            <button id="cbm-poly" class="active" onclick="setCBMode('poly')">Многоугольник</button>
+            <button id="cbm-seg"               onclick="setCBMode('seg')">Отрезок</button>
+        </div>
+        <button onclick="closeCBPoly()">Замкнуть</button>
+        <button onclick="runCB()" class="active">Отсечь</button>
+        <button onclick="resetAll()">Сброс</button>
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(42,157,143,0.15);border:2px solid #2a9d8f"></span>Выпуклый многоугольник</div>
+        <div><span class="lsq" style="background:rgba(100,100,200,0.3)"></span>Исходный отрезок</div>
+        <div><span class="lsq" style="background:#e63946;border-color:#e63946"></span>Видимая часть</div>
+    </div>
+    <p style="font-size:12px;color:#555;margin:3px 0">
+        Сначала задайте выпуклый многоугольник (режим «Многоугольник» → клики → «Замкнуть»),
+        затем переключитесь на «Отрезок» и задайте два клика.
+    </p>
+</div>
+
+<!-- ══ Roberts ══ -->
+<div class="tab-panel" id="panel-rob" style="display:none">
+
+        <!-- ── чекбокс прозрачности ── -->
+        <div class="ctrl-group">
+            <label style="font-size:13px;cursor:pointer;user-select:none">
+                <input type="checkbox" id="rob-transparent" checked>
+                Прозрачный
+            </label>
+        </div>
+
+    </div>
+    <div class="legend">
+        <div><span class="lsq" style="background:rgba(69,123,157,0.7);border:2px solid #457b9d"></span>Видимая грань</div>
+        <div><span class="lsq" style="background:rgba(34,34,34,0.25);border:2px dashed #bbb"></span>Скрытая грань (прозрачный режим)</div>
+    </div>
+
+
+</div>
+
+<!-- ── canvas + таблица ── -->
+<div class="layout" style="margin-top:8px">
+    <div>
+        <div id="status">Готов</div>
+        <canvas id="canvas" width="580" height="440"></canvas>
+        <div id="result"></div>
+    </div>
+    <div style="flex:1;min-width:280px;max-width:600px;overflow-x:auto">
+        <table id="table"></table>
+    </div>
+</div>
+
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+        }
+    }
+</script>
+<script src="/static/lab8/main.js?v=6"></script>
+</body>
+</html>

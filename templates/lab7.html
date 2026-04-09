@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Лаб 7 — Триангуляция Делоне и диаграмма Вороного</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+        .group { display: flex; gap: 5px; align-items: center;
+                 border: 1px solid #ccc; padding: 5px 8px; border-radius: 4px; }
+        .group b { margin-right: 4px; }
+        button { padding: 6px 12px; font-size: 14px; cursor: pointer; }
+        button.active { background: #4a90d9; color: #fff; }
+        #canvas { border: 1px solid #aaa; cursor: crosshair; display: block; margin-top: 6px; }
+        #status { margin: 4px 0; color: #666; font-style: italic; }
+        #result { margin: 4px 0; font-weight: bold; font-size: 15px; }
+        table { border-collapse: collapse; margin-top: 6px; font-size: 12px; max-width: 100%; overflow-x: auto; }
+        th, td { border: 1px solid #ccc; padding: 3px 8px; }
+        th { background: #f0f0f0; }
+        .legend { display: flex; gap: 16px; margin: 6px 0; font-size: 13px; }
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Лаб 7 — Триангуляция Делоне и диаграмма Вороного</h1>
+        <nav>
+            <button onclick="location.href='/'">← Меню</button>
+        </nav>
+    </header>
+
+    <div class="toolbar">
+        <div class="group">
+            <b>Алгоритмы:</b>
+            <button onclick="runDelaunay()">Триангуляция Делоне</button>
+            <button onclick="runVoronoi()">Диаграмма Вороного</button>
+        </div>
+        <div class="group">
+            <b>Показать:</b>
+            <button id="btn-del"  class="active" onclick="toggleDelaunay()">Делоне</button>
+            <button id="btn-vor"  onclick="toggleVoronoi()">Вороного</button>
+            <button id="btn-circ" onclick="toggleCircles()">Окружности</button>
+        </div>
+        <div class="group">
+            <button onclick="addRandom()">Случайные точки</button>
+            <button onclick="reset()">Сброс</button>
+            <label>Масштаб: <input type="range" id="scale" min="15" max="60" value="30"></label>
+        </div>
+    </div>
+
+    <div class="legend">
+        <span><span class="dot" style="background:#457b9d;height:3px;"></span> Рёбра Делоне</span>
+        <span><span class="dot" style="background:#e76f51;height:3px;"></span> Рёбра Вороного</span>
+        <span><span class="dot" style="background:rgba(180,0,180,0.5);height:2px;"></span> Описанные окружности</span>
+        <span><span class="dot" style="background:#e63946;border-radius:50%;width:10px;height:10px;"></span> Точки</span>
+    </div>
+
+    <div id="status">Кликайте по canvas чтобы добавить точки</div>
+    <canvas id="canvas" width="640" height="500"></canvas>
+    <div id="result"></div>
+    <h3>Таблица шагов</h3>
+    <div style="overflow-x:auto;">
+        <table id="table"></table>
+    </div>
+
+    <script src="/static/lab7/main.js"></script>
+</body>
+</html>
